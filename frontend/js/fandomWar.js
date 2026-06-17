@@ -105,21 +105,25 @@ class FandomWar {
 
   attachEventListeners() {
     // TikTok event listeners
-    this.connectTikTokBtn.addEventListener('click', () => this.connectTikTok());
-    this.disconnectTikTokBtn.addEventListener('click', () => this.disconnectTikTok());
-    this.resetTikTokBtn.addEventListener('click', () => this.resetTikTok());
+    if (this.connectTikTokBtn) this.connectTikTokBtn.addEventListener('click', () => this.connectTikTok());
+    if (this.disconnectTikTokBtn) this.disconnectTikTokBtn.addEventListener('click', () => this.disconnectTikTok());
+    if (this.resetTikTokBtn) this.resetTikTokBtn.addEventListener('click', () => this.resetTikTok());
     
-    this.teamAKeywordInput.addEventListener('change', (e) => {
-      this.teamAKeyword = e.target.value.trim();
-      this.saveSettings();
-      this.broadcastConfig();
-    });
+    if (this.teamAKeywordInput) {
+      this.teamAKeywordInput.addEventListener('change', (e) => {
+        this.teamAKeyword = e.target.value.trim();
+        this.saveSettings();
+        this.broadcastConfig();
+      });
+    }
     
-    this.teamBKeywordInput.addEventListener('change', (e) => {
-      this.teamBKeyword = e.target.value.trim();
-      this.saveSettings();
-      this.broadcastConfig();
-    });
+    if (this.teamBKeywordInput) {
+      this.teamBKeywordInput.addEventListener('change', (e) => {
+        this.teamBKeyword = e.target.value.trim();
+        this.saveSettings();
+        this.broadcastConfig();
+      });
+    }
     
     // Vote input event listeners (TikTok)
     if (this.teamAVotesDisplay) {
@@ -143,19 +147,23 @@ class FandomWar {
     }
     
     // Facebook event listeners
-    this.connectFacebookBtn.addEventListener('click', () => this.connectFacebook());
-    this.disconnectFacebookBtn.addEventListener('click', () => this.disconnectFacebook());
-    this.resetFacebookBtn.addEventListener('click', () => this.resetFacebook());
+    if (this.connectFacebookBtn) this.connectFacebookBtn.addEventListener('click', () => this.connectFacebook());
+    if (this.disconnectFacebookBtn) this.disconnectFacebookBtn.addEventListener('click', () => this.disconnectFacebook());
+    if (this.resetFacebookBtn) this.resetFacebookBtn.addEventListener('click', () => this.resetFacebook());
     
-    this.teamAKeywordFbInput.addEventListener('change', (e) => {
-      this.teamAKeyword = e.target.value.trim();
-      this.saveSettings();
-    });
+    if (this.teamAKeywordFbInput) {
+      this.teamAKeywordFbInput.addEventListener('change', (e) => {
+        this.teamAKeyword = e.target.value.trim();
+        this.saveSettings();
+      });
+    }
     
-    this.teamBKeywordFbInput.addEventListener('change', (e) => {
-      this.teamBKeyword = e.target.value.trim();
-      this.saveSettings();
-    });
+    if (this.teamBKeywordFbInput) {
+      this.teamBKeywordFbInput.addEventListener('change', (e) => {
+        this.teamBKeyword = e.target.value.trim();
+        this.saveSettings();
+      });
+    }
     
     // Vote input event listeners (Facebook)
     if (this.teamAVotesFbDisplay) {
@@ -202,12 +210,6 @@ class FandomWar {
     }
     
     try {
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        alert('Bạn cần đăng nhập trước!');
-        return;
-      }
-
       this.connectTikTokBtn.disabled = true;
       this.connectTikTokBtn.textContent = 'Đang kết nối...';
       
@@ -220,18 +222,9 @@ class FandomWar {
         requestBody.sessionId = sessionId;
       }
       
-      const response = await fetch(`${this.apiBaseUrl}/connect`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(requestBody)
-      });
+      const result = await API.post('/api/fandomwar/connect', requestBody);
       
-      const result = await response.json();
-      
-      if (response.ok && result.success) {
+      if (result.success) {
         this.isConnected = true;
         this.currentPlatform = 'tiktok';
         
@@ -260,20 +253,9 @@ class FandomWar {
     if (!this.isConnected || this.currentPlatform !== 'tiktok') return;
     
     try {
-      const token = localStorage.getItem('authToken');
-      if (!token) return;
-
-      const response = await fetch(`${this.apiBaseUrl}/disconnect`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const result = await API.post('/api/fandomwar/disconnect', {});
       
-      const result = await response.json();
-      
-      if (response.ok && result.success) {
+      if (result.success) {
         this.isConnected = false;
         
         // Clear connection state from localStorage
@@ -348,30 +330,15 @@ class FandomWar {
     }
     
     try {
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        alert('Bạn cần đăng nhập trước!');
-        return;
-      }
-
       this.connectFacebookBtn.disabled = true;
       this.connectFacebookBtn.textContent = 'Đang kết nối...';
       
-      const response = await fetch(`${this.apiBaseUrl}/facebook/connect`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ 
-          videoId: this.facebookVideoId,
-          accessToken: this.facebookAccessToken
-        })
+      const result = await API.post('/api/fandomwar/facebook/connect', { 
+        videoId: this.facebookVideoId,
+        accessToken: this.facebookAccessToken
       });
       
-      const result = await response.json();
-      
-      if (response.ok && result.success) {
+      if (result.success) {
         this.isConnected = true;
         this.currentPlatform = 'facebook';
         
@@ -400,20 +367,9 @@ class FandomWar {
     if (!this.isConnected || this.currentPlatform !== 'facebook') return;
     
     try {
-      const token = localStorage.getItem('authToken');
-      if (!token) return;
-
-      const response = await fetch(`${this.apiBaseUrl}/facebook/disconnect`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const result = await API.post('/api/fandomwar/facebook/disconnect', {});
       
-      const result = await response.json();
-      
-      if (response.ok && result.success) {
+      if (result.success) {
         this.isConnected = false;
         
         // Clear connection state from localStorage
@@ -712,11 +668,11 @@ class FandomWar {
     };
 
     const sendConfig = () => {
-      if (!window.banpickSocket || window.banpickSocket.readyState !== WebSocket.OPEN) {
+      if (!window.socketService || !window.socketService.isConnected) {
         return false;
       }
       try {
-        window.banpickSocket.send(JSON.stringify(payload));
+        window.socketService.send(payload);
         return true;
       } catch (error) {
         console.error('Error broadcasting fandomwar config:', error);
@@ -732,9 +688,9 @@ class FandomWar {
     if (this._configRetryTimer) return;
 
     this._configRetryTimer = setInterval(() => {
-      if (this._pendingConfig && window.banpickSocket && window.banpickSocket.readyState === WebSocket.OPEN) {
+      if (this._pendingConfig && window.socketService && window.socketService.isConnected) {
         try {
-          window.banpickSocket.send(JSON.stringify(this._pendingConfig));
+          window.socketService.send(this._pendingConfig);
           this._pendingConfig = null;
           clearInterval(this._configRetryTimer);
           this._configRetryTimer = null;
@@ -758,8 +714,8 @@ class FandomWar {
   }
   
   broadcastVoteCounts() {
-    // Check if banpickSocket is available
-    if (window.banpickSocket && window.banpickSocket.readyState === WebSocket.OPEN) {
+    // Check if socketService is connected
+    if (window.socketService && window.socketService.isConnected) {
       const voteData = {
         type: 'fandomwar-votes',
         teamAVotes: this.teamAVotes,
@@ -767,7 +723,7 @@ class FandomWar {
       };
       
       try {
-        window.banpickSocket.send(JSON.stringify(voteData));
+        window.socketService.send(voteData);
       } catch (error) {
         console.error('Error broadcasting vote counts:', error);
       }
@@ -916,20 +872,9 @@ class FandomWar {
       }
       
       // Verify với backend xem còn connected không
-      const token = localStorage.getItem('authToken');
-      if (!token) return;
+      const result = await API.get('/api/fandomwar/status');
       
-      const response = await fetch(`${this.apiBaseUrl}/status`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        
-        if (result.success && result.data.isConnected) {
+      if (result.success && result.data.isConnected) {
           // Backend vẫn đang connected, restore UI state
           this.isConnected = true;
           const platform = connectionState.platform || 'tiktok'; // Default to tiktok for backward compatibility
@@ -1011,37 +956,20 @@ class FandomWar {
 
   async loadGifts() {
     try {
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        console.error('No auth token found');
-        return;
-      }
-
-      const response = await fetch(`${this.apiBaseUrl}/gifts`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.gifts && data.gifts.length > 0) {
-          this.availableGifts = data.gifts;
-          
-          // Build gift value map for vote counting
-          this.giftValueMap = {};
-          data.gifts.forEach(gift => {
-            this.giftValueMap[gift.name] = gift.value;
-          });
-          
-          // Render gifts and setup checkbox event listeners
-          this.setupGiftDropdowns();
-        } else {
-          console.warn('No gifts found in database');
-        }
+      const data = await API.get('/api/fandomwar/gifts');
+      if (data.success && data.gifts && data.gifts.length > 0) {
+        this.availableGifts = data.gifts;
+        
+        // Build gift value map for vote counting
+        this.giftValueMap = {};
+        data.gifts.forEach(gift => {
+          this.giftValueMap[gift.name] = gift.value;
+        });
+        
+        // Render gifts and setup checkbox event listeners
+        this.setupGiftDropdowns();
       } else {
-        console.error('Failed to load gifts from API');
+        console.warn('No gifts found in database');
       }
     } catch (error) {
       console.error('Error loading gifts:', error);

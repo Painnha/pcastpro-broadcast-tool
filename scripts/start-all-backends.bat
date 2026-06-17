@@ -4,8 +4,8 @@ echo  Starting All Backend Services
 echo ========================================
 echo.
 
-REM Get the directory of this batch file
-set "SCRIPT_DIR=%~dp0"
+REM Get the directory of this batch file's parent (root of repo)
+set "SCRIPT_DIR=%~dp0..\"
 
 REM Start Node.js backend in new window
 echo [INFO] Starting Node.js Backend...
@@ -30,4 +30,3 @@ echo  Press any key to exit this window
 echo ========================================
 
 pause
-

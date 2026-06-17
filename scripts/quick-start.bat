@@ -8,7 +8,7 @@ echo Dang khoi dong PCastPro...
 echo.
 
 :: Cap nhat tu GitHub
-cd /d "%~dp0"
+cd /d "%~dp0.."
 if exist ".git" (
 	echo Dang dong bo voi GitHub va ghi de thay doi...
     git fetch origin
@@ -16,7 +16,7 @@ if exist ".git" (
 )
 
 :: Chuyen den backend
-cd /d "%~dp0backend"
+cd /d "%~dp0..\backend"
 
 :: Cai dat dependencies neu chua co
 if not exist "node_modules" (
@@ -46,7 +46,7 @@ echo.
 echo [X] LOI: Khong the cai dat dependencies!
 echo.
 echo Vui long kiem tra:
-echo - Node.js da duoc cai dat chua? Chay: install-nodejs.bat
+echo - Node.js da duoc cai dat chua? Chay: scripts\install-nodejs.bat
 echo - Ket noi internet
 echo.
 pause

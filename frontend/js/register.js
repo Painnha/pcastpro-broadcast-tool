@@ -1,6 +1,18 @@
+/**
+ * @file register.js
+ * @description Manages registration flow including multi-step layout, OTP trigger and verification.
+ */
+
+/** @type {number} Current visual step in register wizard */
 let currentStep = 1;
+
+/** @type {number|null} Countdown interval reference for OTP timer */
 let countdownTimer = null;
+
+/** @type {string} Email entered in step 1 */
 let currentEmail = '';
+
+/** @type {string} Password entered in step 1 */
 let currentPassword = '';
 
 // DOM Elements
@@ -19,13 +31,20 @@ const countdown = document.getElementById('countdown');
 const successEmail = document.getElementById('successEmail');
 const successDisplayName = document.getElementById('successDisplayName');
 
-// Utility functions
+/**
+ * Display a specific step card and hide others.
+ * @param {number} step - Step index (1 to 3)
+ */
 const showStep = (step) => {
     steps.forEach(s => s.classList.remove('active'));
     document.getElementById(`step${step}`).classList.add('active');
     currentStep = step;
 };
 
+/**
+ * Show error toast message box.
+ * @param {string} message - Error text
+ */
 const showError = (message) => {
     errorMessage.innerHTML = `<div class="error-box">${message}</div>`;
     setTimeout(() => {
@@ -33,6 +52,10 @@ const showError = (message) => {
     }, 5000);
 };
 
+/**
+ * Show success toast message box.
+ * @param {string} message - Success text
+ */
 const showSuccess = (message) => {
     errorMessage.innerHTML = `<div class="success-box">${message}</div>`;
     setTimeout(() => {
@@ -40,6 +63,11 @@ const showSuccess = (message) => {
     }, 5000);
 };
 
+/**
+ * Change button status to loading or back to normal.
+ * @param {HTMLButtonElement} button - Target button
+ * @param {boolean} loading - True to show loading, false to restore
+ */
 const setButtonLoading = (button, loading) => {
     if (loading) {
         button.disabled = true;
@@ -50,6 +78,10 @@ const setButtonLoading = (button, loading) => {
     }
 };
 
+/**
+ * Start visual countdown timer for remaining OTP time.
+ * @param {number} [minutes=5] - Expire duration in minutes
+ */
 const startCountdown = (minutes = 5) => {
     let timeLeft = minutes * 60;
     
@@ -82,20 +114,17 @@ sendOtpBtn.addEventListener('click', async () => {
         return;
     }
     
-    // Validate email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
         showError('Định dạng email không hợp lệ!');
         return;
     }
     
-    // Validate password
     if (password.length < 6) {
         showError('Mật khẩu phải ít nhất 6 ký tự!');
         return;
     }
     
-    // Validate password match
     if (password !== confirmPassword) {
         showError('Mật khẩu xác nhận không khớp!');
         return;
@@ -108,25 +137,14 @@ sendOtpBtn.addEventListener('click', async () => {
     setButtonLoading(sendOtpBtn, true);
     
     try {
-        const response = await fetch('http://localhost:3000/send-otp', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-            sentEmail.textContent = email;
-            showStep(2);
-            startCountdown(5);
-            showSuccess(data.message);
-        } else {
-            showError(data.message || 'Không thể gửi mã OTP');
-        }
+        const data = await API.post('/send-otp', { email, password });
+        sentEmail.textContent = email;
+        showStep(2);
+        startCountdown(5);
+        showSuccess(data.message);
     } catch (error) {
         console.error('Error sending OTP:', error);
-        showError('Đã xảy ra lỗi khi gửi OTP. Vui lòng thử lại.');
+        showError(error.message || 'Đã xảy ra lỗi khi gửi OTP. Vui lòng thử lại.');
     } finally {
         setButtonLoading(sendOtpBtn, false);
     }
@@ -144,29 +162,19 @@ verifyOtpBtn.addEventListener('click', async () => {
     setButtonLoading(verifyOtpBtn, true);
     
     try {
-        const response = await fetch('http://localhost:3000/verify-otp', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                email: currentEmail,
-                otp 
-            })
+        const data = await API.post('/verify-otp', { 
+            email: currentEmail,
+            otp 
         });
         
-        const data = await response.json();
-        
-        if (response.ok) {
-            clearInterval(countdownTimer);
-            successEmail.textContent = currentEmail;
-            successDisplayName.textContent = data.displayName || currentEmail.split('@')[0];
-            showStep(3);
-            showSuccess(data.message);
-        } else {
-            showError(data.message || 'Xác thực OTP thất bại');
-        }
+        clearInterval(countdownTimer);
+        successEmail.textContent = currentEmail;
+        successDisplayName.textContent = data.displayName || currentEmail.split('@')[0];
+        showStep(3);
+        showSuccess(data.message);
     } catch (error) {
         console.error('Error verifying OTP:', error);
-        showError('Đã xảy ra lỗi khi xác thực OTP. Vui lòng thử lại.');
+        showError(error.message || 'Xác thực OTP thất bại');
     } finally {
         setButtonLoading(verifyOtpBtn, false);
     }
@@ -177,29 +185,19 @@ resendOtpBtn.addEventListener('click', async () => {
     setButtonLoading(resendOtpBtn, true);
     
     try {
-        const response = await fetch('http://localhost:3000/send-otp', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                email: currentEmail,
-                password: currentPassword
-            })
+        const data = await API.post('/send-otp', { 
+            email: currentEmail,
+            password: currentPassword
         });
         
-        const data = await response.json();
-        
-        if (response.ok) {
-            clearInterval(countdownTimer);
-            startCountdown(5);
-            countdown.style.color = '#ff9800';
-            otpInput.value = '';
-            showSuccess('Mã OTP mới đã được gửi!');
-        } else {
-            showError(data.message || 'Không thể gửi lại mã OTP');
-        }
+        clearInterval(countdownTimer);
+        startCountdown(5);
+        countdown.style.color = '#ff9800';
+        otpInput.value = '';
+        showSuccess('Mã OTP mới đã được gửi!');
     } catch (error) {
         console.error('Error resending OTP:', error);
-        showError('Đã xảy ra lỗi khi gửi lại OTP. Vui lòng thử lại.');
+        showError(error.message || 'Không thể gửi lại mã OTP');
     } finally {
         setButtonLoading(resendOtpBtn, false);
     }

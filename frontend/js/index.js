@@ -1,46 +1,35 @@
+/**
+ * @file index.js
+ * @description Controls the main admin view layout, handles user session verification, theme switches, and binds WebSocket updates.
+ */
 
-const initializeWebSocket = (token) => {
-    const ws = new WebSocket(`ws://localhost:3000/ws?token=${token}`);
+/**
+ * Initializes WebSocket connection and registers message handlers.
+ */
+const initializeWebSocket = () => {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    socketService.connect(`${protocol}//${window.location.host}/ws`);
 
-    ws.onopen = () => {
-        // WebSocket connected
-    };
+    // Handle session force-logout signal from backend
+    socketService.on('force_logout', (data) => {
+        handleForceLogout(data.message, data.reason);
+    });
 
-    ws.onmessage = (event) => {
-        try {
-            const data = JSON.parse(event.data);
-            
-            // Xử lý force logout
-            if (data.type === 'force_logout') {
-                handleForceLogout(data.message, data.reason);
-                return;
+    // Forward TikTok Live comments or status events to fandomWar
+    socketService.on('message', (message) => {
+        if (message.type && message.type.startsWith('tiktok-')) {
+            if (window.fandomWar) {
+                window.fandomWar.handleWebSocketMessage(message);
             }
-            
-            // Forward TikTok Live messages to FandomWar
-            if (data.type && data.type.startsWith('tiktok-')) {
-                if (window.fandomWar) {
-                    window.fandomWar.handleWebSocketMessage(data);
-                }
-                return;
-            }
-            
-        } catch (error) {
-            console.error('WebSocket error:', error);
         }
-    };
-
-    ws.onclose = () => {
-        // WebSocket closed
-    };
-
-    ws.onerror = (error) => {
-        console.error('WebSocket connection error:', error);
-    };
-    
-    return ws;
+    });
 };
 
-// Xử lý force logout
+/**
+ * Perform a force logout in response to a server signal or session expiration.
+ * @param {string} message - Description message shown to user
+ * @param {'force_logout'|'session_expired'|'account_banned'} reason - Categorized logout cause
+ */
 const handleForceLogout = (message, reason) => {
     let alertMessage = message;
     
@@ -60,15 +49,14 @@ const handleForceLogout = (message, reason) => {
     
     alert(alertMessage);
     
-    // Xóa token và chuyển hướng
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('sessionId');
-    localStorage.removeItem('userInfo');
-    window.location.href = '/login.html';
+    // Clear storage and redirect
+    API.logout();
 };
 
-
-// Xác thực đăng nhập
+/**
+ * Authenticates user session against the server database.
+ * @returns {Promise<boolean>} True if session is valid, false otherwise
+ */
 const checkUserSession = async () => {
     const token = localStorage.getItem('authToken');
 
@@ -79,69 +67,49 @@ const checkUserSession = async () => {
     }
 
     try {
-        const response = await fetch('http://localhost:3000/check-session', {
-            method: 'GET',
-            headers: { 'Authorization': `Bearer ${token}` },
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            
-            // Hiển thị thông tin user
-            if (data.user) {
-                updateUserInfo(data.user);
-            }
-            
-            return true;
-        } else {
-            const data = await response.json();
-            
-            // Xử lý force logout
-            if (data.forceLogout) {
-                handleForceLogout(data.message, 'session_invalid');
-                return false;
-            }
-            
-            alert(data.message || 'Phiên đăng nhập không hợp lệ. Bạn sẽ được chuyển hướng đến trang đăng nhập.');
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('sessionId');
-            localStorage.removeItem('userInfo');
-            window.location.href = '/login.html';
-            return false;
+        const data = await API.get('/check-session');
+        
+        if (data.user) {
+            updateUserInfo(data.user);
         }
+        return true;
     } catch (error) {
         console.error('Error checking session:', error);
-        alert('Đã có lỗi xảy ra khi kiểm tra phiên đăng nhập. Bạn sẽ được chuyển hướng đến trang đăng nhập.');
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('sessionId');
-        localStorage.removeItem('userInfo');
-        window.location.href = '/login.html';
+        alert(error.message || 'Đã có lỗi xảy ra khi kiểm tra phiên đăng nhập.');
+        API.logout();
         return false;
     }
 };
 
-// Cập nhật thông tin user trên giao diện
+/**
+ * Update current user metadata display inside UI.
+ * @param {Object} user - Authenticated user details
+ * @param {string} user.email - User email
+ * @param {string} [user.displayName] - Optional visual user label
+ * @param {'user'|'admin'} user.role - User role level
+ */
 const updateUserInfo = (user) => {
     const userInfoElement = document.getElementById('userInfo');
     if (userInfoElement) {
         userInfoElement.textContent = `Xin chào, ${user.displayName || user.email}${user.role === 'admin' ? ' (Admin)' : ''}`;
     }
     
-    // Load user themes
     loadUserThemes(user);
 };
 
-// Load user's owned themes into dropdown
+/**
+ * Loads owned themes from user data object into the select dropdown list.
+ * @param {Object} user - Current user object
+ * @param {string[]} user.ownedThemes - List of owned theme keys
+ * @param {string} [user.currentTheme] - Active theme ID
+ */
 const loadUserThemes = (user) => {
     const themeSelect = document.getElementById('themeSelect');
     if (!themeSelect || !user) return;
     
-    // Check if user has owned themes
     if (!user.ownedThemes || user.ownedThemes.length === 0) {
-        // Hide dropdown and show message
         themeSelect.style.display = 'none';
         
-        // Create or update no themes message
         let noThemesMsg = document.getElementById('noThemesMessage');
         if (!noThemesMsg) {
             noThemesMsg = document.createElement('span');
@@ -154,17 +122,14 @@ const loadUserThemes = (user) => {
         return;
     }
     
-    // Show dropdown and hide no themes message
     themeSelect.style.display = 'inline-block';
     const noThemesMsg = document.getElementById('noThemesMessage');
     if (noThemesMsg) {
         noThemesMsg.style.display = 'none';
     }
     
-    // Clear existing options
     themeSelect.innerHTML = '';
     
-    // Add owned themes
     user.ownedThemes.forEach(themeId => {
         const option = document.createElement('option');
         option.value = themeId;
@@ -172,68 +137,48 @@ const loadUserThemes = (user) => {
         themeSelect.appendChild(option);
     });
     
-    // Set current theme
     if (user.currentTheme) {
         themeSelect.value = user.currentTheme;
     }
 };
 
-// Handle theme change
+/**
+ * Triggers database update when user changes their active theme.
+ * @param {string} newThemeId - Target theme ID
+ */
 const handleThemeChange = async (newThemeId) => {
-    const token = localStorage.getItem('authToken');
-    if (!token) return;
-    
     try {
-        const response = await fetch('http://localhost:3000/user/update-theme', {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ currentTheme: newThemeId })
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            console.log('Theme updated successfully:', newThemeId);
-            alert('Theme đã được cập nhật thành công!');
-        } else {
-            const data = await response.json();
-            console.error('Failed to update theme:', data.message);
-            alert('Không thể cập nhật theme: ' + data.message);
-        }
+        await API.put('/user/update-theme', { currentTheme: newThemeId });
+        alert('Theme đã được cập nhật thành công!');
     } catch (error) {
         console.error('Error updating theme:', error);
-        alert('Đã có lỗi xảy ra khi cập nhật theme.');
+        alert(error.message || 'Đã có lỗi xảy ra khi cập nhật theme.');
     }
 };
 
-// Xử lý đăng xuất
-const logout = () => {
+/**
+ * Visual logout prompt to clear session cookies/caches.
+ */
+const triggerLogout = () => {
     if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('sessionId');
-        localStorage.removeItem('userInfo');
-        window.location.href = '/login.html';
+        API.logout();
     }
 };
 
+// Application Main Entrypoint IIFE
 (async () => {
     const isValidSession = await checkUserSession();
     if (!isValidSession) return;
 
-    const token = localStorage.getItem('authToken');
-    if (token) {
-        initializeWebSocket(token); 
-    }
+    // Connect to WebSocket using shared socketService
+    initializeWebSocket();
     
-    // Setup logout button
+    // Bind UI actions
     const logoutButton = document.getElementById('logoutButton');
     if (logoutButton) {
-        logoutButton.addEventListener('click', logout);
+        logoutButton.addEventListener('click', triggerLogout);
     }
     
-    // Setup theme dropdown
     const themeSelect = document.getElementById('themeSelect');
     if (themeSelect) {
         themeSelect.addEventListener('change', (e) => {
@@ -241,12 +186,10 @@ const logout = () => {
         });
     }
     
-    // Setup guide button
     const guideButton = document.getElementById('guideButton');
     if (guideButton) {
         guideButton.addEventListener('click', () => {
             window.open('guide.html', '_blank');
         });
     }
-
 })();

@@ -1,15 +1,15 @@
 // banpickManager.js
-const socket = new WebSocket("ws://localhost:3000/ws");
+const socket = window.socketService;
 
 // Expose socket + helpers for other tabs (OBS Manager)
 window.banpickSocket = socket;
 window.sendObjectiveFromBanpick = (team, objective, action = "start") => {
-  if (!window.banpickSocket || window.banpickSocket.readyState !== WebSocket.OPEN) return false;
-  window.banpickSocket.send(JSON.stringify({ type: "objective", team, objective, action }));
+  if (!window.banpickSocket || !window.banpickSocket.isConnected) return false;
+  window.banpickSocket.send({ type: "objective", team, objective, action });
   return true;
 };
 
-socket.onopen = () => {
+socket.on('open', () => {
   // Khi WebSocket sẵn sàng, nếu FandomWar đã khởi tạo thì đẩy lại config ra OBS
   if (window.fandomWar && typeof window.fandomWar.broadcastConfig === "function") {
     try {
@@ -18,10 +18,7 @@ socket.onopen = () => {
       console.error("Error broadcasting config on socket open:", e);
     }
   }
-};
-socket.onmessage = (event) => {};
-socket.onerror = (error) => {};
-socket.onclose = () => {};
+});
 
 let selectedHeroImage = "";
 
@@ -346,32 +343,20 @@ const handleSaveTeamInfo = async () => {
   }
 
   try {
-    const res = await fetch("http://localhost:3000/api/save-team-info", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ teamAName, teamBName, scoreA, scoreB }),
-    });
-    if (res.ok) {
-      showTeamInfoMessage("Thông tin đội đã được lưu thành công!", "success");
-    } else {
-      const data = await res.json();
-      showTeamInfoMessage(data.message || "Không thể lưu thông tin đội", "error");
-    }
+    const data = await API.post("/api/save-team-info", { teamAName, teamBName, scoreA, scoreB });
+    showTeamInfoMessage("Thông tin đội đã được lưu thành công!", "success");
   } catch (err) {
-    showTeamInfoMessage("Đã có lỗi xảy ra khi lưu thông tin đội", "error");
+    showTeamInfoMessage(err.message || "Không thể lưu thông tin đội", "error");
   }
 };
 
 const loadTeamInfoFromFiles = async () => {
   try {
-    const res = await fetch("http://localhost:3000/api/get-team-info");
-    if (res.ok) {
-      const data = await res.json();
-      document.getElementById("teamAName").value = data.teamAName;
-      document.getElementById("teamBName").value = data.teamBName;
-      document.getElementById("scoreA").value = data.scoreA;
-      document.getElementById("scoreB").value = data.scoreB;
-    }
+    const data = await API.get("/api/get-team-info");
+    document.getElementById("teamAName").value = data.teamAName;
+    document.getElementById("teamBName").value = data.teamBName;
+    document.getElementById("scoreA").value = data.scoreA;
+    document.getElementById("scoreB").value = data.scoreB;
   } catch (err) {
     console.error("Error loading team info:", err);
   }
@@ -383,15 +368,11 @@ const handleResetTeamInfo = async () => {
   document.getElementById("scoreA").value = "0";
   document.getElementById("scoreB").value = "0";
   try {
-    await fetch("http://localhost:3000/api/save-team-info", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        teamAName: "team xanh",
-        teamBName: "team đỏ",
-        scoreA: 0,
-        scoreB: 0,
-      }),
+    await API.post("/api/save-team-info", {
+      teamAName: "team xanh",
+      teamBName: "team đỏ",
+      scoreA: 0,
+      scoreB: 0,
     });
     showTeamInfoMessage("Đã reset về giá trị mặc định và lưu vào file!", "success");
   } catch (err) {
@@ -499,15 +480,11 @@ const handleSwapTeamInfo = async () => {
   
   // Save swapped team info to files (ignore if fails)
   try {
-    await fetch("http://localhost:3000/api/save-team-info", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ 
-        teamAName: teamBName, 
-        teamBName: teamAName, 
-        scoreA: scoreB, 
-        scoreB: scoreA 
-      }),
+    await API.post("/api/save-team-info", { 
+      teamAName: teamBName, 
+      teamBName: teamAName, 
+      scoreA: scoreB, 
+      scoreB: scoreA 
     });
   } catch (err) {
     // Silently ignore file save errors

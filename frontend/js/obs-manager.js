@@ -1159,25 +1159,8 @@ const obsManager = (function() {
             await new Promise(resolve => setTimeout(resolve, 1500));
             
             // Call API to get latest file
-            const token = localStorage.getItem('authToken');
-            if (!token) {
-                showNotification('Đã lưu Buffer! Nhưng cần đăng nhập để tự động cập nhật.', 'warning');
-                if (pathInput) pathInput.value = '';
-                return;
-            }
-            
-            const response = await fetch('http://localhost:3000/api/obs/latest-file', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ directory: highlightFolder })
-            });
-            
-            const result = await response.json();
-            
-            if (response.ok && result.success) {
+            try {
+                const result = await API.post('/api/obs/latest-file', { directory: highlightFolder });
                 const filePath = result.filePath;
                 
                 // Update input field
@@ -1193,8 +1176,8 @@ const obsManager = (function() {
                 await updateHighlightInternal(filePath);
                 
                 showNotification(`✅ Highlight đã được cập nhật! ${result.fileName}`, 'success');
-            } else {
-                showNotification('Đã lưu Buffer nhưng không tìm thấy file mới', 'error');
+            } catch (err) {
+                showNotification(err.message || 'Đã lưu Buffer nhưng không tìm thấy file mới', 'error');
                 if (pathInput) pathInput.value = '';
             }
             
@@ -1259,36 +1242,15 @@ const obsManager = (function() {
 
     async function saveStore() {
         try {
-            const token = localStorage.getItem('authToken');
-            if (!token) {
-                // Fallback to localStorage if not authenticated
-                console.warn('Không có token, lưu vào localStorage');
-                localStorage.setItem('obs_tool_store', JSON.stringify(STORE));
-                return;
-            }
-
-            const response = await fetch('/api/obs/config', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    pinned: STORE.pinned || [],
-                    links: STORE.links || {},
-                    contents: STORE.contents || {},
-                    swapPairs: STORE.swapPairs || []
-                })
+            const result = await API.post('/api/obs/config', {
+                pinned: STORE.pinned || [],
+                links: STORE.links || {},
+                contents: STORE.contents || {},
+                swapPairs: STORE.swapPairs || []
             });
 
-            if (!response.ok) {
-                throw new Error('API call failed');
-            }
-
-            const result = await response.json();
             if (result.success) {
                 console.log('Đã lưu cấu hình OBS vào database');
-                // Also save to localStorage as backup
                 localStorage.setItem('obs_tool_store', JSON.stringify(STORE));
             }
         } catch (e) {
@@ -1313,42 +1275,30 @@ const obsManager = (function() {
                 }
             } else {
                 // Load from database
-                const response = await fetch('/api/obs/config', {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
+                const result = await API.get('/api/obs/config');
 
-                if (response.ok) {
-                    const result = await response.json();
-                    if (result.success && result.data) {
-                        STORE = {
-                            pinned: result.data.pinned || [],
-                            links: result.data.links || {},
-                            contents: result.data.contents || {},
-                            swapPairs: result.data.swapPairs || [],
-                            cameraData: {
-                                players: {
-                                    A: { Top: '', Jung: '', Mid: '', ADC: '', Support: '' },
-                                    B: { Top: '', Jung: '', Mid: '', ADC: '', Support: '' }
-                                },
-                                cameras: {
-                                    A: { Top: '', Jung: '', Mid: '', ADC: '', Support: '' },
-                                    B: { Top: '', Jung: '', Mid: '', ADC: '', Support: '' }
-                                }
+                if (result.success && result.data) {
+                    STORE = {
+                        pinned: result.data.pinned || [],
+                        links: result.data.links || {},
+                        contents: result.data.contents || {},
+                        swapPairs: result.data.swapPairs || [],
+                        cameraData: {
+                            players: {
+                                A: { Top: '', Jung: '', Mid: '', ADC: '', Support: '' },
+                                B: { Top: '', Jung: '', Mid: '', ADC: '', Support: '' }
+                            },
+                            cameras: {
+                                A: { Top: '', Jung: '', Mid: '', ADC: '', Support: '' },
+                                B: { Top: '', Jung: '', Mid: '', ADC: '', Support: '' }
                             }
-                        };
-                        console.log('Đã load cấu hình OBS từ database');
-                        // Also save to localStorage as backup
-                        localStorage.setItem('obs_tool_store', JSON.stringify(STORE));
-                        renderLinkGroups();
-                        renderSwapPairs();
-                        return;
-                    }
-                } else {
-                    throw new Error('API call failed');
+                        }
+                    };
+                    console.log('Đã load cấu hình OBS từ database');
+                    localStorage.setItem('obs_tool_store', JSON.stringify(STORE));
+                    renderLinkGroups();
+                    renderSwapPairs();
+                    return;
                 }
             }
         } catch (e) {
@@ -1471,7 +1421,7 @@ const obsManager = (function() {
                     playerNameEl.textContent = newName || '';
                     
                     // Broadcast update via WebSocket
-                    if (window.banpickSocket && window.banpickSocket.readyState === WebSocket.OPEN) {
+                    if (window.socketService && window.socketService.isConnected) {
                         // Get all player names to broadcast
                         const allNames = [];
                         ['A', 'B'].forEach(t => {
@@ -1480,10 +1430,10 @@ const obsManager = (function() {
                             });
                         });
                         
-                        window.banpickSocket.send(JSON.stringify({ 
+                        window.socketService.send({ 
                             type: 'updateNames', 
                             names: allNames 
-                        }));
+                        });
                     }
                 }
             }

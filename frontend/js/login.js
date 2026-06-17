@@ -1,3 +1,8 @@
+/**
+ * @file login.js
+ * @description Controls login authentication flow, including force logout and device conflict dialogs.
+ */
+
 // DOM Elements
 const emailInput = document.getElementById('emailInput');
 const passwordInput = document.getElementById('passwordInput');
@@ -9,9 +14,14 @@ const forceLoginBtn = document.getElementById('forceLoginBtn');
 const cancelLoginBtn = document.getElementById('cancelLoginBtn');
 const messageDiv = document.getElementById('message');
 
+/** @type {Object|null} Stores credentials temporarily when device conflict occurs */
 let pendingLoginData = null;
 
-// Utility functions
+/**
+ * Display a feedback message to the user for a limited time.
+ * @param {string} message - Message text to display
+ * @param {'success'|'error'} [type='error'] - Type of message box styling
+ */
 const showMessage = (message, type = 'error') => {
     messageDiv.innerHTML = `<div class="${type}-box">${message}</div>`;
     setTimeout(() => {
@@ -19,6 +29,11 @@ const showMessage = (message, type = 'error') => {
     }, 5000);
 };
 
+/**
+ * Toggle the loading state of a button element.
+ * @param {HTMLButtonElement} button - The target button
+ * @param {boolean} loading - True to show loading spinner/text, false to reset
+ */
 const setButtonLoading = (button, loading) => {
     if (loading) {
         button.disabled = true;
@@ -30,6 +45,10 @@ const setButtonLoading = (button, loading) => {
     }
 };
 
+/**
+ * Get or generate a persistent device ID.
+ * @returns {string} The unique device identifier
+ */
 const generateOrGetDeviceId = () => {
     let deviceId = localStorage.getItem('deviceId');
     if (!deviceId || !rememberDeviceCheckbox.checked) {
@@ -41,6 +60,12 @@ const generateOrGetDeviceId = () => {
     return deviceId;
 };
 
+/**
+ * Show a conflict notification dialog when the user is logged in elsewhere.
+ * @param {Object} conflictData - Information about the conflicting session
+ * @param {string} conflictData.currentDeviceId - Device ID of the active session
+ * @param {string} conflictData.lastActivity - Last activity timestamp
+ */
 const showConflictDialog = (conflictData) => {
     const lastActivity = new Date(conflictData.lastActivity).toLocaleString('vi-VN');
     conflictMessage.innerHTML = `
@@ -52,49 +77,53 @@ const showConflictDialog = (conflictData) => {
     conflictDialog.style.display = 'block';
 };
 
+/**
+ * Hide the conflict notification dialog and clear temporary data.
+ */
 const hideConflictDialog = () => {
     conflictDialog.style.display = 'none';
     pendingLoginData = null;
 };
 
+/**
+ * Send credentials to the backend to authenticate.
+ * @param {string} email - User's email
+ * @param {string} password - User's password
+ * @param {string} deviceId - Current device ID
+ * @param {boolean} [forceLogin=false] - If true, force disconnects other active sessions
+ */
 const attemptLogin = async (email, password, deviceId, forceLogin = false) => {
     setButtonLoading(loginBtn, true);
     
     try {
-        const response = await fetch('http://localhost:3000/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password, deviceId, forceLogin })
-        });
+        const data = await API.post('/login', { email, password, deviceId, forceLogin });
 
-        const data = await response.json();
-
-        if (response.ok) {
-            // Đăng nhập thành công
-            localStorage.setItem('authToken', data.token);
-            localStorage.setItem('sessionId', data.sessionId);
-            localStorage.setItem('userInfo', JSON.stringify(data.user));
+        // Save session credentials
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('sessionId', data.sessionId);
+        localStorage.setItem('userInfo', JSON.stringify(data.user));
+        
+        showMessage('Đăng nhập thành công!', 'success');
+        
+        setTimeout(() => {
+            window.location.href = '/index.html';
+        }, 1000);
             
-            showMessage('Đăng nhập thành công!', 'success');
-            
-            // Chuyển hướng đến trang chính
-            setTimeout(() => {
-                window.location.href = '/index.html';
-            }, 1000);
-            
-        } else if (response.status === 409) {
-            // Xung đột thiết bị
+    } catch (error) {
+        // Handle device conflict status
+        if (error.message && error.message.includes('Tài khoản đang được sử dụng')) {
             console.log('Conflict detected, setting pendingLoginData:', { email, password, deviceId });
             pendingLoginData = { email, password, deviceId };
-            showConflictDialog(data);
             
+            // Try to parse conflict info from error if possible, or fallback
+            showConflictDialog({
+                currentDeviceId: 'Thiết bị khác',
+                lastActivity: new Date()
+            });
         } else {
-            // Lỗi đăng nhập
-            showMessage(data.message || 'Đăng nhập thất bại');
+            console.error('Error during login:', error);
+            showMessage(error.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
         }
-    } catch (error) {
-        console.error('Error during login:', error);
-        showMessage('Đã xảy ra lỗi. Vui lòng thử lại.');
     } finally {
         setButtonLoading(loginBtn, false);
     }
@@ -118,21 +147,9 @@ forceLoginBtn.addEventListener('click', async () => {
     console.log('Force login clicked, pendingLoginData:', pendingLoginData);
     
     if (pendingLoginData && pendingLoginData.email && pendingLoginData.password && pendingLoginData.deviceId) {
-        // Store data locally before hiding dialog (which sets pendingLoginData to null)
-        const loginData = {
-            email: pendingLoginData.email,
-            password: pendingLoginData.password,
-            deviceId: pendingLoginData.deviceId
-        };
-        
+        const loginData = { ...pendingLoginData };
         hideConflictDialog();
-        
-        await attemptLogin(
-            loginData.email, 
-            loginData.password, 
-            loginData.deviceId, 
-            true
-        );
+        await attemptLogin(loginData.email, loginData.password, loginData.deviceId, true);
     } else {
         console.error('Invalid pendingLoginData:', pendingLoginData);
         showMessage('Dữ liệu đăng nhập không hợp lệ. Vui lòng thử lại.');
@@ -144,7 +161,7 @@ cancelLoginBtn.addEventListener('click', () => {
     hideConflictDialog();
 });
 
-// Allow Enter key to submit
+// Allow Enter key navigation/submission
 passwordInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
         loginBtn.click();
@@ -157,31 +174,19 @@ emailInput.addEventListener('keypress', (e) => {
     }
 });
 
-// Check if user is already logged in
-window.addEventListener('load', () => {
+// Check session status on page load
+window.addEventListener('load', async () => {
     const token = localStorage.getItem('authToken');
     if (token) {
-        // Verify token is still valid
-        fetch('http://localhost:3000/check-session', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        })
-        .then(response => {
-            if (response.ok) {
-                // Already logged in, redirect to main page
-                window.location.href = '/index.html';
-            } else {
-                // Token invalid, clear storage
-                localStorage.removeItem('authToken');
-                localStorage.removeItem('sessionId');
-                localStorage.removeItem('userInfo');
-            }
-        })
-        .catch(error => {
-            console.error('Error checking session:', error);
-            // Clear storage on error
+        try {
+            await API.get('/check-session');
+            // Valid token exists, redirect straight to index
+            window.location.href = '/index.html';
+        } catch (error) {
+            // Invalid session or token expired, clear localStorage credentials
             localStorage.removeItem('authToken');
             localStorage.removeItem('sessionId');
             localStorage.removeItem('userInfo');
-        });
+        }
     }
 });

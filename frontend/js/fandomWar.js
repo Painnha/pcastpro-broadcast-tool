@@ -945,9 +945,6 @@ class FandomWar {
           // Backend không còn connected, clear state
           this.clearConnectionState();
         }
-      } else {
-        this.clearConnectionState();
-      }
     } catch (error) {
       console.error('Error checking connection status:', error);
       this.clearConnectionState();

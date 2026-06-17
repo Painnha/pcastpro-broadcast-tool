@@ -15,9 +15,9 @@ const initializeWebSocket = () => {
         handleForceLogout(data.message, data.reason);
     });
 
-    // Forward TikTok Live comments or status events to fandomWar
+    // Forward TikTok and Facebook Live comments or status events to fandomWar
     socketService.on('message', (message) => {
-        if (message.type && message.type.startsWith('tiktok-')) {
+        if (message.type && (message.type.startsWith('tiktok-') || message.type.startsWith('facebook-'))) {
             if (window.fandomWar) {
                 window.fandomWar.handleWebSocketMessage(message);
             }

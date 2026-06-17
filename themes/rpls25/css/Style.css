@@ -1,0 +1,688 @@
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    background-color: black;
+}
+
+/* Định nghĩa kiểu chung */
+.slot {
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    border: 3px solid white;
+    background-color: #444141;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    transition: transform 0.2s ease;
+}
+
+.lane-logo {
+    width: 50px;
+    height: auto;
+}
+
+.player-name {
+    font-family: 'SVNOMNY';
+    font-size: 15px;
+    color: #ffffff;
+    text-align: center;
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    z-index: 2;
+    text-transform: uppercase;
+    background-color: rgba(0, 0, 0, 1);
+    height: 36px;
+    line-height: 36px;
+    margin: 0;
+    padding: 0;
+}
+
+.ban {
+    width: 70px;
+    height: 70px;
+    border: 1px solid white;
+}
+
+.pick {
+    width: 143px;
+    height: 271px;
+    position: relative; 
+    margin: -3px; 
+    z-index: 2;
+border: 1px solid transparent;
+}
+
+.pick-list {
+    display: flex;
+    gap: 0px; 
+}
+
+.ban-list {
+    display: flex;
+    gap: 20px;
+    position: relative;
+}
+
+.active.ban {
+    position: relative;
+    overflow: hidden;
+    z-index: 2;
+    border-color: white;
+}
+
+.active.ban::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 30%;
+    height: 30%;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    transform: translate(-50%, -50%);
+    animation: squareGrow 1.5s infinite ease-out, whitePulse 1.5s infinite ease;
+    z-index: 4;
+    pointer-events: none;
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+}
+
+@keyframes squareGrow {
+    0% { width: 30%; height: 30%; opacity: 1; }
+    90% { width: 95%; height: 95%; opacity: 0.3; }
+    100% { width: 95%; height: 95%; opacity: 0; }
+}
+
+@keyframes whitePulse {
+    0% { border-color: rgba(255, 255, 255, 0.7); }
+    50% { border-color: rgba(255, 255, 255, 1); }
+    100% { border-color: rgba(255, 255, 255, 0.7); }
+}
+
+.active.pick {
+    position: relative;
+    overflow: hidden;
+    z-index: 2;
+}
+
+.active.pick::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 35px;
+    height: 100%;
+    background-color: #d5d584; /* Màu vàng nhạt chính xác */
+    z-index: 3;
+}
+
+.picking-text {
+    position: absolute;
+    top: 40%;
+    right: 18px; /* Đặt ở giữa thanh vàng bên phải */
+    transform: translateY(-50%) rotate(-90deg);
+    display: flex;
+    flex-direction: column-reverse; /* Sắp xếp ký tự từ dưới lên */
+    justify-content: center;
+    align-items: center;
+    z-index: 4;
+}
+
+.letter {
+    font-family: 'Arial Black', 'Arial Bold','Arial Italic', Arial, sans-serif;
+    font-size: 20px;
+    font-weight: 900;
+    color: black; /* Màu chữ phù hợp với thanh vàng */
+    opacity: 1;
+    animation: fadeInOut 2s infinite; /* Animation cơ bản, lặp vô hạn */
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 1; }
+    50% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+/* Đặt độ trễ cho từng ký tự để chạy lần lượt */
+.slot.pick.active .picking-text .letter:nth-child(1) { animation-delay: 0s; }
+.slot.pick.active .picking-text .letter:nth-child(2) { animation-delay: 0.2s; }
+.slot.pick.active .picking-text .letter:nth-child(3) { animation-delay: 0.4s; }
+.slot.pick.active .picking-text .letter:nth-child(4) { animation-delay: 0.6s; }
+.slot.pick.active .picking-text .letter:nth-child(5) { animation-delay: 0.8s; }
+.slot.pick.active .picking-text .letter:nth-child(6) { animation-delay: 1s; }
+.slot.pick.active .picking-text .letter:nth-child(7) { animation-delay: 1.2s; }
+
+/* Ẩn chữ PICKING mặc định khi không active */
+.slot.pick .picking-text {
+    display: none;
+}
+
+/* Hiển thị và kích hoạt animation khi ô pick ở trạng thái active */
+.slot.pick.active .picking-text {
+    display: flex;
+}
+
+/* Tắt hiệu ứng cũ */
+.active.pick::before {
+    content: none; /* Xóa chữ "PICKING" mặc định */
+}
+
+.active.pick .highlight-letter {
+    display: none; /* Ẩn chữ highlight cũ */
+}
+
+@font-face {
+    font-family: 'SVNOMNY';
+    src: url('/assets/font/SVNOMNYBLACK.OTF') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+.active.pick.locked::before,
+.active.pick.locked::after {
+    display: none;
+}
+
+.active.pick .player-name {
+    z-index: 10;
+}
+
+.active.pick .heroImage {
+    z-index: 4;
+}
+
+.heroheroImage {
+    position: absolute;
+}
+
+#countdown {
+    font-family: 'SVNOMNY'; /* Sử dụng font chữ tùy chỉnh */
+    font-size: 50px; /* Kích thước font chữ */
+    color: #ffffff; /* Màu chữ */
+    text-align: center;
+    bottom: 5px;
+    text-transform: uppercase;
+}
+
+@keyframes glow {
+    0% { box-shadow: 0 0 10px yellow; }
+    50% { box-shadow: 0 0 20px orange; }
+    100% { box-shadow: 0 0 10px yellow; }
+}
+
+@keyframes zoomInOut {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+@keyframes borderGlow {
+    0% {
+        box-shadow: inset 0 0 5px yellow, inset 0 0 10px yellow, inset 0 0 15px yellow, inset 0 0 20px yellow;
+    }
+    25% {
+        box-shadow: inset 0 0 5px orange, inset 0 0 10px orange, inset 0 0 15px orange, inset 0 0 20px orange;
+    }
+    50% {
+        box-shadow: inset 0 0 5px red, inset 0 0 10px red, inset 0 0 15px red, inset 0 0 20px red;
+    }
+    75% {
+        box-shadow: inset 0 0 5px orange, inset 0 0 10px orange, inset 0 0 15px orange, inset 0 0 20px orange;
+    }
+    100% {
+        box-shadow: inset 0 0 5px yellow, inset 0 0 10px yellow, inset 0 0 15px yellow, inset 0 0 20px yellow;
+    }
+}
+
+@keyframes borderRun {
+    0% {
+        border-image-source: linear-gradient(
+            to right,
+            transparent,
+            white,
+            transparent
+        );
+        transform: translateX(-100%);
+    }
+    100% {
+        border-image-source: linear-gradient(
+            to right,
+            transparent,
+            white,
+            transparent
+        );
+        transform: translateX(100%);
+    }
+}
+
+.slot.ban {
+    position: relative;  /* Đảm bảo positioning context cho icon */
+}
+
+.slot.ban .heroImage {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    background-position: top center !important; /* Hiển thị từ trên xuống */
+    background-size: 100% auto !important; /* Giữ tỉ lệ ảnh, lấy chiều rộng làm chuẩn */
+}
+
+.slot.ban.grayscale .heroImage {
+    filter: grayscale(100%);
+}
+
+.ban-icon {
+    position: absolute;
+    bottom: 5px;
+    left: 5px;
+    width: 20px;
+    height: 20px;
+    z-index: 10;
+    pointer-events: none;
+    opacity: 1;
+}
+
+.heroImage {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+.active.pick.animating::before {
+    content: none;
+}
+
+/* Hiển thị 3D container chỉ khi có class picking-active-3d */
+.picking-3d-container {
+    display: none !important;
+}
+
+.picking-active-3d .picking-3d-container {
+    display: flex !important;
+}
+
+/* Đảm bảo kích thước letter-3d */
+.letter-3d {
+    margin: 3px 0;
+    backface-visibility: visible;
+}
+
+/* Định dạng container cho chữ PICKING */
+.picking-text {
+    position: absolute;
+    justify-content: center;
+    align-items: center;
+    z-index: 4;
+    flex-direction: row;
+}
+
+/* Định dạng từng ký tự */
+.letter {
+    font-family: 'Arial Black', 'Arial Bold', Arial, sans-serif;
+    font-size: 20px;
+    font-weight: 900;
+    color: black; /* Màu chữ phù hợp với thanh vàng */
+    opacity: 1;
+    animation: fadeInOut 2s infinite; /* Animation cơ bản, lặp vô hạn */
+}
+
+/* Keyframes cho hiệu ứng fade out và fade in */
+@keyframes fadeInOut {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+/* Đặt độ trễ cho từng ký tự để chạy lần lượt */
+.slot.pick.active .picking-text .letter:nth-child(1) { /* P */
+    animation-delay: 0s;
+}
+.slot.pick.active .picking-text .letter:nth-child(2) { /* I */
+    animation-delay: 0.2s;
+}
+.slot.pick.active .picking-text .letter:nth-child(3) { /* C */
+    animation-delay: 0.4s;
+}
+.slot.pick.active .picking-text .letter:nth-child(4) { /* K */
+    animation-delay: 0.6s;
+}
+.slot.pick.active .picking-text .letter:nth-child(5) { /* I */
+    animation-delay: 0.8s;
+}
+.slot.pick.active .picking-text .letter:nth-child(6) { /* N */
+    animation-delay: 1s;
+}
+.slot.pick.active .picking-text .letter:nth-child(7) { /* G */
+    animation-delay: 1.2s;
+}
+
+/* Ẩn chữ PICKING mặc định khi không active */
+.slot.pick .picking-text {
+    display: none;
+    transform-style: preserve-3d;
+}
+
+/* Hiển thị và kích hoạt animation khi ô pick ở trạng thái active */
+.slot.pick.active .picking-text {
+    display: flex;
+    transform: translateX(50%) rotate(-90deg);
+    z-index: 5;
+}
+
+/* Tắt hiệu ứng cũ */
+.active.pick::before {
+    content: none; /* Xóa chữ "PICKING" mặc định */
+}
+
+.active.pick .highlight-letter {
+    display: none; /* Ẩn chữ highlight cũ */
+}
+
+/* Đảm bảo thanh vàng vẫn hiển thị */
+.active.pick::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 35px;
+    height: 100%;
+    background-color: #ffffff; /* Màu vàng nhạt */
+    z-index: 4;
+}
+
+/* Định dạng dấu chấm */
+.dots {
+    display: inline-block;
+    font-family: 'Arial Black', 'Arial Bold', Arial, sans-serif;
+    font-size: 20px;
+    font-weight: 900;
+    color: black; /* Màu chữ phù hợp với thanh vàng */
+    opacity: 1;
+    animation: fadeInOut 2s infinite; /* Animation cơ bản, lặp vô hạn */
+}
+
+/* Đặt độ trễ cho từng dấu chấm để chạy lần lượt */
+.slot.pick.active .picking-text .dots:nth-child(1) { animation-delay: 0.1s; }
+.slot.pick.active .picking-text .dots:nth-child(2) { animation-delay: 0.2s; }
+.slot.pick.active .picking-text .dots:nth-child(3) { animation-delay: 0.3s; }
+
+/* Hiệu ứng nhấp nháy cho dấu chấm */
+@keyframes fadeInOut {
+    0% { opacity: 1; }
+    50% { opacity: 0; }
+    100% { opacity: 1; }
+}
+.picking-3d-container {
+    perspective: 1000px; /* Tạo không gian 3D */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative; /* Điều chỉnh vị trí nếu cần */
+}
+
+/* Đảm bảo ảnh tướng trong ban list hiển thị đúng */
+#banListA .slot.ban .heroImage,
+#banListB .slot.ban .heroImage {
+    background-position: top center !important;
+}
+/* Previous Picks Styles */
+.previous-container {
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+    align-items: flex-start;
+    justify-content: start;
+    width: 100%;
+    height: 100%;
+}
+
+.previous-match {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    align-items: center;
+}
+
+.match-title {
+    font-family: 'SVNOMNY';
+    color: white;
+    text-align: center;
+    font-size: 24px;
+    text-transform: uppercase;
+}
+
+.previous-picks-grid {
+    display: flex;
+    gap: 5px;
+}
+
+.previous-pick {
+    width: 50px;
+    height: 50px;
+    background-size: cover;
+    background-position: top;
+
+}
+
+/* ========== FANDOM WAR STYLES ========== */
+
+/* Common styles for both teams */
+.fandomwar-container {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.vote-bar-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.vote-bar-bg {
+    display: block;
+    width: auto;
+    height: auto;
+}
+
+.vote-bar-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.vote-bar-progress-container {
+    position: absolute;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.fandom-war-text {
+    position: relative;
+    z-index: 10;
+    font-size: 20px;
+    font-weight: 900;
+    color: #000000;
+    text-shadow: 
+        2px 2px 4px rgba(0, 0, 0, 0.8),
+        -1px -1px 2px rgba(0, 0, 0, 0.5);
+    letter-spacing: 4px;
+    pointer-events: none;
+}
+
+.vote-count-text {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    font-size: 25px;
+    font-weight: 900;
+    color: #000000;
+    text-shadow: 
+        2px 2px 4px rgba(0, 0, 0, 0.8),
+        -1px -1px 2px rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+}
+
+.particles {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 15;
+}
+
+.particle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: rgba(255, 215, 0, 0.8);
+    border-radius: 50%;
+    animation: float-up 3s ease-out forwards;
+}
+
+/* Effect videos below progress bar */
+.effect-video {
+    position: absolute;
+    top: 300px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 500px;
+    height: 500px;
+    z-index: 5;
+    pointer-events: none;
+}
+
+.effect-video video {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Team A specific styles */
+.team-a .vote-bar-progress-container {
+    right: 0;
+    mask: url('/themes/default/assets/Overlay/LineVoteA.png') no-repeat center;
+    mask-size: contain;
+    -webkit-mask: url('/themes/default/assets/Overlay/LineVoteA.png') no-repeat center;
+    -webkit-mask-size: contain;
+}
+
+.team-a .vote-bar-progress {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, 
+        rgba(255, 196, 19, 0.8) 0%, 
+        rgba(255, 196, 19, 0.9) 100%
+    );
+    transition: width 0.3s ease-out;
+}
+
+.team-a .vote-count-text {
+    right: 40px;
+}
+
+.team-a .max-reached {
+    animation: pulse-team-a 0.5s ease-in-out infinite alternate;
+}
+
+/* Team B specific styles */
+.team-b .vote-bar-progress-container {
+    left: 0;
+    mask: url('/themes/default/assets/Overlay/LiveVoteB.png') no-repeat center;
+    mask-size: contain;
+    -webkit-mask: url('/themes/default/assets/Overlay/LiveVoteB.png') no-repeat center;
+    -webkit-mask-size: contain;
+}
+
+.team-b .vote-bar-progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, 
+        rgba(255, 196, 19, 0.8) 0%, 
+        rgba(255, 196, 19, 0.9) 100%
+    );
+    transition: width 0.3s ease-out;
+}
+
+.team-b .vote-count-text {
+    left: 40px;
+}
+
+.team-b .max-reached {
+    animation: pulse-team-b 0.5s ease-in-out infinite alternate;
+}
+
+/* Animations */
+@keyframes float-up {
+    0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-200px) scale(0);
+    }
+}
+
+@keyframes pulse-team-a {
+    0% {
+        background: linear-gradient(90deg, 
+            rgba(255, 196, 19, 0.8) 0%, 
+            rgba(255, 196, 19, 0.9) 100%
+        );
+    }
+    100% {
+        background: linear-gradient(90deg, 
+            rgba(255, 196, 19, 1) 0%, 
+            rgba(255, 196, 19, 1) 100%
+        );
+    }
+}
+
+@keyframes pulse-team-b {
+    0% {
+        background: linear-gradient(90deg, 
+            rgba(255, 196, 19, 0.8) 0%, 
+            rgba(255, 196, 19, 0.9) 100%
+        );
+    }
+    100% {
+        background: linear-gradient(90deg, 
+            rgba(255, 196, 19, 1) 0%, 
+            rgba(255, 196, 19, 1) 100%
+        );
+    }
+}
+

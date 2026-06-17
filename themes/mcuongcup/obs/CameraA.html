@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera A - Team A</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        #cameraImage {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            object-position: center;
+            background-color: black;
+            display: none;
+        }
+    </style>
+</head>
+<body class="team-a">
+    <div id="cameraContainer">
+        <div id="playerName"></div>
+    </div>
+    <iframe id="cameraFrame" src="" allow="camera; microphone; autoplay; fullscreen; display-capture" allowfullscreen></iframe>
+    <img id="cameraImage" src="" alt="Player Image" />
+    <script src="/js/banpick.js"></script>
+</body>
+</html>

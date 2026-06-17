@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, initial-scale=1.0">
+    <title>Fandom War - Team B</title>
+    <link rel="stylesheet" href="/css/Style.css">
+    <style>
+        html, body {
+            width: 1920px;
+            height: 1080px;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div class="fandomwar-container team-b">
+        <div class="vote-bar-wrapper">
+            <img src="/assets/Overlay/fandomwarBackgroundB.png" alt="Vote Bar" class="vote-bar-bg">
+            <div class="vote-bar-progress-container">
+                <div class="vote-bar-progress" id="voteBarProgress"></div>
+            </div>
+            <div class="vote-bar-content">
+                <div class="fandom-war-text">FANDOM WAR</div>
+                <div class="vote-count-text" id="voteCountText">0</div>
+            </div>
+            <div class="particles" id="particles"></div>
+        </div>
+        <!-- Effect Videos -->
+        <div class="effect-video">
+            <video id="effectVideo" autoplay muted loop style="display: none;">
+                <source src="/assets/Overlay/level1.webm" type="video/webm">
+            </video>
+        </div>
+    </div>
+
+    <script src="/js/banpick.js"></script>
+    <script>
+        let currentVotes = 0;
+        const maxVotes = 10000;
+
+        function updateVoteDisplay(votes) {
+            currentVotes = votes; // Cho phép vote > 10000
+            const percentage = Math.min((currentVotes / maxVotes) * 100, 100); // Giới hạn percentage ở 100%
+            
+            const progressBar = document.getElementById('voteBarProgress');
+            const countText = document.getElementById('voteCountText');
+            const effectVideo = document.getElementById('effectVideo');
+            
+            // Update progress bar - Team B progress từ trái sang phải
+            // Thanh tiến trình full ở 100% nhưng vẫn hiển thị số vote thực tế
+            progressBar.style.width = percentage + '%';
+            
+            // Update text - hiển thị số vote thực tế (có thể > 10000)
+            countText.textContent = currentVotes.toLocaleString();
+            
+            // Update effect video based on vote count (không giới hạn)
+            updateEffectVideo(currentVotes, effectVideo);
+            
+            // Add special effect when reaching max (>= 10000)
+            if (currentVotes >= maxVotes) {
+                progressBar.classList.add('max-reached');
+                createParticles();
+            } else {
+                progressBar.classList.remove('max-reached');
+            }
+        }
+
+        function updateEffectVideo(votes, videoElement) {
+            if (!videoElement) return;
+            
+            let videoSrc = '';
+            
+            if (votes >= 0 && votes <= 499) {
+                videoSrc = '/themes/mcuongcup/assets/Overlay/level1.webm';
+            } else if (votes >= 500 && votes <= 999) {
+                videoSrc = '/themes/mcuongcup/assets/Overlay/level2.webm';
+            } else if (votes >= 1000 && votes <= 2999) {
+                videoSrc = '/themes/mcuongcup/assets/Overlay/level3.webm';
+            } else if (votes >= 3000 && votes <= 5999) {
+                videoSrc = '/themes/mcuongcup/assets/Overlay/level4.webm';
+            } else if (votes >= 6000) {
+                videoSrc = '/themes/mcuongcup/assets/Overlay/level5.webm';
+            }
+            
+            console.log('Loading video:', videoSrc, 'for votes:', votes);
+            
+            if (videoSrc) {
+                const currentSrc = videoElement.src || '';
+                if (!currentSrc.endsWith(videoSrc.split('/').pop())) {
+                    videoElement.src = videoSrc;
+                    videoElement.load();
+                }
+                videoElement.style.display = 'block';
+                videoElement.play().catch(e => console.log('Video play error:', e));
+            }
+        }
+
+        function createParticles() {
+            const container = document.getElementById('particles');
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    particle.style.left = Math.random() * 100 + '%';
+                    particle.style.animationDelay = Math.random() * 0.5 + 's';
+                    container.appendChild(particle);
+                    
+                    setTimeout(() => particle.remove(), 3000);
+                }, i * 100);
+            }
+        }
+
+        // Override handleData from banpick.js to handle fandomwar votes
+        const originalHandleData = window.handleData || handleData;
+        window.handleData = function(data) {
+            if (data.type === 'fandomwar-votes') {
+                updateVoteDisplay(data.teamBVotes || 0);
+            } else if (originalHandleData) {
+                originalHandleData(data);
+            }
+        };
+
+        // Initialize
+        updateVoteDisplay(0);
+    </script>
+</body>
+</html>

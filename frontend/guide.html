@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hướng dẫn sử dụng PCastPro</title>
+    <link rel="stylesheet" href="css/styleManager.css">
+    <style>
+        .guide-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        
+        .guide-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+        }
+        
+        .guide-header h1 {
+            margin: 0;
+            font-size: 2.5em;
+        }
+        
+        .guide-header p {
+            margin: 10px 0 0 0;
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            z-index: 1000;
+        }
+        
+        .back-button:hover {
+            background: #5a6fd8;
+        }
+        
+        .guide-section {
+            background: white;
+            margin: 20px 0;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .guide-section h2 {
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .obs-url-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .obs-url-card {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .obs-url-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+        }
+        
+        .obs-url-card h3 {
+            color: #667eea;
+            margin: 0 0 15px 0;
+            font-size: 1.3em;
+        }
+        
+        .url-container {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            word-break: break-all;
+            margin: 10px 0;
+            position: relative;
+        }
+        
+        .copy-button {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .copy-button:hover {
+            background: #5a6fd8;
+        }
+        
+        .url-description {
+            color: #666;
+            font-size: 14px;
+            margin-top: 10px;
+            line-height: 1.5;
+        }
+        
+        .step-list {
+            counter-reset: step-counter;
+        }
+        
+        .step-item {
+            counter-increment: step-counter;
+            margin: 15px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            border-radius: 0 5px 5px 0;
+        }
+        
+        .step-item::before {
+            content: counter(step-counter);
+            background: #667eea;
+            color: white;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-weight: bold;
+        }
+        
+        .highlight-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .highlight-box h3 {
+            margin: 0 0 10px 0;
+        }
+        
+        .warning-box {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        
+        .info-box {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <button class="back-button" onclick="window.location.href='index.html'">← Quay lại</button>
+    
+    <div class="guide-container">
+        <div class="guide-header">
+            <h1>📖 Hướng dẫn sử dụng PCastPro</h1>
+            <p>Tổng hợp các URL OBS và hướng dẫn chi tiết</p>
+        </div>
+
+        <!-- Tổng hợp OBS URLs -->
+        <div class="guide-section">
+            <h2>🔗 Tổng hợp các OBS URL</h2>
+            <p>Dưới đây là danh sách tất cả các URL mà bạn có thể sử dụng trong OBS để hiển thị các thành phần của PCastPro:</p>
+            
+            <div class="obs-url-grid">
+                <!-- Banpick URLs -->
+                <div class="obs-url-card">
+                    <h3>🎯 Banpick Chính</h3>
+                    <div class="url-container">
+                        <span id="banpick-main-url">http://localhost:3000/themes/apl2025/obs/banpick.html</span>
+                        <button class="copy-button" onclick="copyToClipboard('banpick-main-url')">Copy</button>
+                    </div>
+                    <div class="url-description">
+                        Hiển thị giao diện banpick chính với các slot pick/ban, countdown và thông tin đội
+                    </div>
+                </div>
+
+                <div class="obs-url-card">
+                    <h3>📊 Scoreboard</h3>
+                    <div class="url-container">
+                        <span id="scoreboard-url">http://localhost:3000/themes/apl2025/obs/scoreboard.html</span>
+                        <button class="copy-button" onclick="copyToClipboard('scoreboard-url')">Copy</button>
+                    </div>
+                    <div class="url-description">
+                        Hiển thị tỷ số và tên đội trong trận đấu
+                    </div>
+                </div>
+
+                <div class="obs-url-card">
+                    <h3>👥 Player Names</h3>
+                    <div class="url-container">
+                        <span id="players-url">http://localhost:3000/themes/apl2025/obs/players.html</span>
+                        <button class="copy-button" onclick="copyToClipboard('players-url')">Copy</button>
+                    </div>
+                    <div class="url-description">
+                        Hiển thị tên các tuyển thủ trong từng vị trí
+                    </div>
+                </div>
+
+                <div class="obs-url-card">
+                    <h3>⏰ Timer</h3>
+                    <div class="url-container">
+                        <span id="timer-url">http://localhost:3000/themes/apl2025/obs/timer.html</span>
+                        <button class="copy-button" onclick="copyToClipboard('timer-url')">Copy</button>
+                    </div>
+                    <div class="url-description">
+                        Hiển thị countdown timer cho banpick phase
+                    </div>
+                </div>
+
+                <div class="obs-url-card">
+                    <h3>🏆 Match Info</h3>
+                    <div class="url-container">
+                        <span id="match-info-url">http://localhost:3000/themes/apl2025/obs/matchinfo.html</span>
+                        <button class="copy-button" onclick="copyToClipboard('match-info-url')">Copy</button>
+                    </div>
+                    <div class="url-description">
+                        Hiển thị thông tin trận đấu (bo, số ván, etc.)
+                    </div>
+                </div>
+
+                <div class="obs-url-card">
+                    <h3>🎮 Heroes Grid</h3>
+                    <div class="url-container">
+                        <span id="heroes-grid-url">http://localhost:3000/themes/apl2025/obs/heroes.html</span>
+                        <button class="copy-button" onclick="copyToClipboard('heroes-grid-url')">Copy</button>
+                    </div>
+                    <div class="url-description">
+                        Hiển thị grid các tướng để pick/ban
+                    </div>
+                </div>
+
+                <div class="obs-url-card">
+                    <h3>🔥 Fandom War</h3>
+                    <div class="url-container">
+                        <span id="fandom-war-url">http://localhost:3000/themes/apl2025/obs/fandomwar.html</span>
+                        <button class="copy-button" onclick="copyToClipboard('fandom-war-url')">Copy</button>
+                    </div>
+                    <div class="url-description">
+                        Hiển thị vote từ TikTok Live và Facebook Live
+                    </div>
+                </div>
+
+                <div class="obs-url-card">
+                    <h3>💬 Live Comments</h3>
+                    <div class="url-container">
+                        <span id="comments-url">http://localhost:3000/themes/apl2025/obs/comments.html</span>
+                        <button class="copy-button" onclick="copyToClipboard('comments-url')">Copy</button>
+                    </div>
+                    <div class="url-description">
+                        Hiển thị bình luận trực tiếp từ live stream
+                    </div>
+                </div>
+
+                <div class="obs-url-card">
+                    <h3>📈 Vote Counter</h3>
+                    <div class="url-container">
+                        <span id="vote-counter-url">http://localhost:3000/themes/apl2025/obs/votecounter.html</span>
+                        <button class="copy-button" onclick="copyToClipboard('vote-counter-url')">Copy</button>
+                    </div>
+                    <div class="url-description">
+                        Hiển thị số lượng vote của từng đội
+                    </div>
+                </div>
+            </div>
+
+            <div class="highlight-box">
+                <h3>💡 Lưu ý quan trọng</h3>
+                <ul>
+                    <li>Tất cả URL đều sử dụng theme <strong>apl2025</strong> làm mặc định</li>
+                    <li>Thay đổi <code>apl2025</code> thành theme khác nếu bạn đang sử dụng theme khác</li>
+                    <li>Đảm bảo server đang chạy trên port 3000</li>
+                    <li>Các URL sẽ tự động cập nhật khi có thay đổi từ giao diện chính</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Hướng dẫn cài đặt OBS -->
+        <div class="guide-section">
+            <h2>⚙️ Hướng dẫn cài đặt trong OBS</h2>
+            
+            <div class="step-list">
+                <div class="step-item">
+                    <strong>Mở OBS Studio</strong> và tạo Scene mới cho PCastPro
+                </div>
+                
+                <div class="step-item">
+                    <strong>Thêm Browser Source:</strong>
+                    <ul>
+                        <li>Click chuột phải trong Sources → Add → Browser Source</li>
+                        <li>Đặt tên cho source (VD: "Banpick Main")</li>
+                    </ul>
+                </div>
+                
+                <div class="step-item">
+                    <strong>Cấu hình Browser Source:</strong>
+                    <ul>
+                        <li>URL: Copy một trong các URL ở trên</li>
+                        <li>Width: 1920 (hoặc độ phân giải bạn muốn)</li>
+                        <li>Height: 1080 (hoặc độ phân giải bạn muốn)</li>
+                        <li>✅ Refresh browser when scene becomes active</li>
+                        <li>✅ Shutdown source when not visible</li>
+                    </ul>
+                </div>
+                
+                <div class="step-item">
+                    <strong>Lặp lại</strong> cho tất cả các thành phần bạn muốn hiển thị
+                </div>
+            </div>
+
+            <div class="warning-box">
+                <strong>⚠️ Lưu ý:</strong> Đảm bảo server PCastPro đang chạy trước khi mở các Browser Source trong OBS
+            </div>
+        </div>
+
+        <!-- Các theme khác -->
+        <div class="guide-section">
+            <h2>🎨 Các theme khác</h2>
+            <p>PCastPro hỗ trợ nhiều theme khác nhau. Thay đổi theme trong URL:</p>
+            
+            <div class="info-box">
+                <strong>Các theme có sẵn:</strong>
+                <ul>
+                    <li><code>apl2025</code> - Theme chính thức APL 2025</li>
+                    <li><code>default</code> - Theme mặc định</li>
+                    <li><code>default2</code> - Theme mặc định phiên bản 2</li>
+                    <li><code>rpls25</code> - Theme RPLS 2025</li>
+                    <li><code>tsu</code> - Theme TSU</li>
+                </ul>
+            </div>
+            
+            <p><strong>Ví dụ:</strong> Để sử dụng theme default, thay đổi URL từ:</p>
+            <div class="url-container">
+                http://localhost:3000/themes/apl2025/obs/banpick.html
+            </div>
+            <p>Thành:</p>
+            <div class="url-container">
+                http://localhost:3000/themes/default/obs/banpick.html
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent;
+            
+            navigator.clipboard.writeText(text).then(function() {
+                // Thay đổi text của button tạm thời
+                const button = element.nextElementSibling;
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
+                button.style.background = '#28a745';
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = '#667eea';
+                }, 2000);
+            }).catch(function(err) {
+                console.error('Could not copy text: ', err);
+                alert('Không thể copy URL. Vui lòng copy thủ công.');
+            });
+        }
+    </script>
+</body>
+</html>

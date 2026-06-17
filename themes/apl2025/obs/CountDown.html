@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Count Down</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<style>
+body {
+    flex-direction: column
+}
+</style>
+<body>
+    <!-- Giữ lại phần tử countdown gốc để banpick.js cập nhật -->
+    <div id="countdown"><span class="prefix">00:</span><span class="timer">60</span></div>
+    
+    <!-- Thanh tiến trình thay thế -->
+    <div class="progress-container">
+        <div class="progress-left"></div>
+        <div class="progress-right"></div>
+    </div>
+
+    <!-- Giữ nguyên script gốc -->
+    <script src="/js/banpick.js"></script>
+    
+    <script>
+        // Ghi đè hàm startCountdown ngay sau khi banpick.js load
+        if (window.startCountdown) {
+            const originalStartCountdown = window.startCountdown;
+            window.startCountdown = function() {
+                clearInterval(window.countdown);
+                window.timeLeft = 60;
+                if (timerElement) timerElement.textContent = window.timeLeft.toString().padStart(2, '0');
+
+                window.countdown = setInterval(() => {
+                    window.timeLeft--;
+                    if (timerElement) timerElement.textContent = window.timeLeft.toString().padStart(2, '0');
+
+                    if (window.timeLeft <= 0) {
+                        clearInterval(window.countdown);
+                    }
+                }, 1000);
+            };
+        }
+        // Các phần tử DOM
+        const countdownElement = document.getElementById("countdown");
+        const timerElement = document.querySelector('.timer');
+        const progressLeft = document.querySelector('.progress-left');
+        const progressRight = document.querySelector('.progress-right');
+        
+        // Thời gian và biến trạng thái
+        let maxTime = 60; // Thời gian tối đa mặc định
+        let startTime = null;
+        let isRunning = false;
+        let animationFrameId = null;
+        let lastTimestamp = 0;
+        const FRAME_DURATION = 1000 / 60; // 60fps
+        
+        // Ban đầu reset thanh tiến trình về 0
+        progressLeft.style.width = '0%';
+        progressRight.style.width = '0%';
+        
+        // Ghi đè hàm socket.onmessage từ banpick.js
+        const originalOnMessage = socket.onmessage;
+        socket.onmessage = async function(event) {
+            // Gọi hàm xử lý gốc trước
+            if (originalOnMessage) {
+                await originalOnMessage(event);
+            }
+            
+            // Phân tích dữ liệu từ socket
+            let data;
+            try {
+                if (event.data instanceof Blob) {
+                    const text = await event.data.text();
+                    data = JSON.parse(text);
+                } else if (typeof event.data === 'string') {
+                    data = JSON.parse(event.data);
+                }
+                
+                // Xử lý tín hiệu restartCountdown
+                if (data && data.countdown === "restartCountdown") {
+                    console.log("Nhận tín hiệu restartCountdown");
+                    resetAndStartAnimation();
+                }
+                
+                // Xử lý cập nhật thời gian
+                if (data && data.type === "timer") {
+                    const timeRemaining = parseInt(data.time);
+                    
+                    // Nếu nhận được thời gian và chưa chạy, bắt đầu animation
+                    if (timeRemaining > 0 && !isRunning) {
+                        startAnimation(timeRemaining);
+                    }
+                    // Nếu nhận được 0, dừng animation
+                    else if (timeRemaining <= 0) {
+                        stopAnimation();
+                        progressLeft.style.width = '50%';
+                        progressRight.style.width = '50%';
+                    }
+                }
+            } catch (error) {
+                console.error("Lỗi xử lý dữ liệu socket:", error);
+            }
+        };
+        
+        // Hàm reset và bắt đầu animation
+        function resetAndStartAnimation() {
+            // Tạm thời remove transition để reset ngay lập tức
+            progressLeft.style.transition = 'none';
+            progressRight.style.transition = 'none';
+            
+            progressLeft.style.width = '0%';
+            progressRight.style.width = '0%';
+            
+            // Force reflow để đảm bảo reset hoàn toàn
+            void progressLeft.offsetWidth;
+            
+            // Khôi phục transition
+            progressLeft.style.transition = 'width 16.67ms linear';
+            progressRight.style.transition = 'width 16.67ms linear';
+            
+            stopAnimation();
+            startAnimation(60);
+        }
+        
+        // Bắt đầu animation với thời gian cụ thể
+        function startAnimation(startSeconds) {
+            maxTime = startSeconds;
+            startTime = performance.now();
+            lastTimestamp = startTime;
+            isRunning = true;
+            
+            if (animationFrameId !== null) {
+                cancelAnimationFrame(animationFrameId);
+            }
+            
+            // Sử dụng high resolution timestamp
+            updateAnimation(startTime);
+        }
+        
+        // Dừng animation
+        function stopAnimation() {
+            isRunning = false;
+            if (animationFrameId !== null) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+        }
+        
+        // Cập nhật animation trong mỗi frame
+        function updateAnimation(timestamp) {
+            if (!isRunning) return;
+            
+            // Tính toán delta time để đảm bảo animation mượt
+            const deltaTime = timestamp - lastTimestamp;
+            
+            // Chỉ update nếu đã đủ thời gian cho 1 frame
+            if (deltaTime >= FRAME_DURATION) {
+                const elapsedSeconds = (timestamp - startTime) / 1000;
+                const remainingSeconds = Math.max(0, maxTime - elapsedSeconds);
+                const remainingPercent = (remainingSeconds / maxTime) * 50;
+                const progressPercent = 50 - remainingPercent;
+                
+                // Sử dụng transform thay vì width để tối ưu performance
+                requestAnimationFrame(() => {
+                    progressLeft.style.width = `${progressPercent}%`;
+                    progressRight.style.width = `${progressPercent}%`;
+                });
+                
+                lastTimestamp = timestamp;
+                
+                if (remainingSeconds <= 0) {
+                    stopAnimation();
+                    // Đảm bảo thanh tiến trình đạt 100%
+                    progressLeft.style.width = '50%';
+                    progressRight.style.width = '50%';
+                    return;
+                }
+            }
+            
+            animationFrameId = requestAnimationFrame(updateAnimation);
+        }
+        
+        // Đảm bảo animation dừng khi tab không hiển thị
+        let visibilityTimeout;
+        document.addEventListener('visibilitychange', function() {
+            clearTimeout(visibilityTimeout);
+            
+            if (document.hidden) {
+                if (isRunning) stopAnimation();
+            } else {
+                            // Đợi 16ms trước khi restart để đảm bảo browser đã sẵn sàng
+            visibilityTimeout = setTimeout(() => {
+                const countdownValue = parseInt(timerElement.textContent);
+                if (countdownValue > 0) startAnimation(countdownValue);
+            }, 16);
+            }
+        });
+        
+        // Kiểm tra giá trị ban đầu của countdown
+        window.addEventListener('load', () => {
+            // Đợi 1 frame để đảm bảo browser đã sẵn sàng
+            requestAnimationFrame(() => {
+                const countdownValue = parseInt(timerElement.textContent);
+                if (countdownValue > 0 && countdownValue < 60) {
+                    startAnimation(countdownValue);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

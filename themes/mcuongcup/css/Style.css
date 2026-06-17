@@ -1,0 +1,1023 @@
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    background-color: black;
+}
+
+/* Định nghĩa kiểu chung */
+.slot {
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    border: 3px solid white;
+    background-color: #444141;
+    display: flex; /* Sử dụng Flexbox */
+    flex-direction: column; /* Đặt chiều dọc */
+    align-items: center; /* Căn giữa các phần tử */
+    justify-content: center;
+    overflow: hidden;
+    transition: transform 0.2s ease;
+}
+
+/* Backup: Logo lane cũ ở bottom center */
+/* .lane-logo {
+    width: 30px;
+    height: auto;
+    position: absolute;
+    bottom: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+} */
+
+/* Logo lane mới: phía trên, gốc trái (team A) / gốc phải (team B), cách đều 3px */
+.lane-logo {
+    width: 30px;
+    height: auto;
+    position: absolute;
+    top: 3px;
+    z-index: 2;
+    filter: brightness(0);
+}
+
+.teamA .lane-logo {
+    left: 3px;
+    right: auto;
+}
+
+.teamB .lane-logo {
+    right: 3px;
+    left: auto;
+}
+  @font-face {
+    font-family: 'SVNOMNY';
+    src: url('/assets/font/SVNOMNYBLACK.OTF') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'SVNOMNYBOLD';
+    src: url('/assets/font/SVN-OMNY-BOLD.OTF') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'GS3';
+    src: url('/assets/font/GS3.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'GS3DRUKCONDSUPER';
+    src: url('/assets/font/GS3DRUKCONDSUPER.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'UTMEremitage';
+    src: url('/assets/font/UTM Eremitage.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+  /* Backup: Player name cũ (nằm dọc bên trái/phải) */
+  /* .player-name {
+    font-family: 'UTMEremitage';
+    font-size: 30px;
+    color: #ffffff;
+    position: absolute;
+    bottom: 5px;
+    transform: rotate(-90deg);
+    white-space: nowrap;
+    z-index: 2;
+    letter-spacing: 2px;
+  }
+  .teamA .player-name {
+    left: 35px;
+    transform-origin: left bottom;
+    transform: rotate(-90deg);
+  }
+  .teamB .player-name {
+    left: calc(100% - 3px);
+    right: auto;
+    transform-origin: left bottom;
+    transform: rotate(-90deg);
+  } */
+
+  /* Player name wrapper: background full width, không padding */
+  .player-name {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%; /* Background full width với ô pick */
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0; /* Không padding ở wrapper */
+    box-sizing: border-box;
+    overflow: hidden; /* Ẩn text tràn ra ngoài */
+    z-index: 2;
+  }
+
+  /* Player name text: chứa text thực sự, có padding */
+  .player-name-text {
+    font-family: 'UTMEremitage';
+    font-size: 30px; /* Font size tối đa, sẽ được điều chỉnh bởi JavaScript */
+    white-space: nowrap; /* Không xuống dòng */
+    padding: 0 10px; /* Padding để text thụt lề */
+    line-height: 45px;
+    box-sizing: border-box;
+    /* Không dùng overflow: hidden và text-overflow: ellipsis để JavaScript có thể co giãn font-size */
+  }
+
+  /* Team A - Background trắng, tên đen */
+  .teamA .player-name {
+    background-color: #ffffff;
+    transform: none;
+    transform-origin: center;
+  }
+
+  .teamA .player-name-text {
+    color: #000000;
+  }
+
+  /* Team B - Background trắng, tên đen */
+  .teamB .player-name {
+    background-color: #ffffff;
+    transform: none;
+    transform-origin: center;
+  }
+
+  .teamB .player-name-text {
+    color: #000000;
+  }
+
+/* Kích thước các slot */
+.ban {
+    width: 70px;
+    height: 70px;
+    border: 1px solid white;
+}
+
+.slot.ban {
+    position: relative;  /* Đảm bảo positioning context cho icon */
+}
+
+.slot.ban .heroImage {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    background-position: top center !important; /* Hiển thị từ trên xuống */
+    background-size: 100% auto !important; /* Giữ tỉ lệ ảnh, lấy chiều rộng làm chuẩn */
+}
+
+.slot.ban.grayscale .heroImage {
+    filter: grayscale(100%);
+}
+
+.ban-icon {
+    position: absolute;
+    bottom: 5px;
+    left: 5px;
+    width: 20px;
+    height: 20px;
+    z-index: 10;
+    pointer-events: none;
+    opacity: 1;
+    filter: none !important;
+}
+
+.slot.ban.grayscale .ban-icon {
+    filter: none !important;
+}
+
+.active.ban {
+    position: relative;
+    overflow: hidden;
+    z-index: 2;
+    border: 1px solid white;
+}
+
+.active.ban::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 30%;
+    height: 30%;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    transform: translate(-50%, -50%);
+    animation: squareGrow 1.5s infinite ease-out, whitePulse 1.5s infinite ease;
+    z-index: 4;
+    pointer-events: none;
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+}
+
+@keyframes squareGrow {
+    0% { width: 30%; height: 30%; opacity: 1; }
+    90% { width: 95%; height: 95%; opacity: 0.3; }
+    100% { width: 95%; height: 95%; opacity: 0; }
+}
+
+@keyframes whitePulse {
+    0% { border-color: rgba(255, 255, 255, 0.7); }
+    50% { border-color: rgba(255, 255, 255, 1); }
+    100% { border-color: rgba(255, 255, 255, 0.7); }
+}
+
+.pick {
+    width: 159px; /* Kích thước cố định cho ô pick */
+    height: 289px; /* Kích thước cố định cho ô pick */
+    transition: none; /* Không có hiệu ứng chuyển tiếp khi thay đổi trạng thái */
+    position: relative; /* Để giữ vị trí cố định */
+    /* background-color: rgba(0, 0, 0, 0.5) !important; Background màu đen opacity 50% */
+    background-color: transparent !important;
+}
+/* Border styles cho các ô pick - sử dụng ID selector */
+#pickA1,
+#pickA2,
+#pickA3,
+#pickA4,
+#pickA5 {
+    border: none !important;
+    border-right: 2px solid rgb(87, 85, 85) !important;
+}
+
+
+#pickB1 {
+    border: 2px solid rgb(87, 85, 85) !important;
+}
+
+#pickB2,
+#pickB3,
+#pickB4 {
+    border: none !important;
+    border-right: 2px solid rgb(87, 85, 85) !important;
+}
+
+#pickB5 {
+    border: none !important;
+}
+
+.pick-list {
+    display: flex;
+    gap: 0px; 
+}
+.ban-list {
+    display: flex;
+    gap: 20px;
+    position: relative;
+}
+.active {
+    border: 3px solid gray;
+    position: relative;
+    top: 0;
+    bottom: 0;
+    overflow: hidden;
+    z-index: 3;
+    align-items: center; /* Căn giữa các phần tử */
+    justify-content: center;
+}
+
+/* Đảm bảo viền phải của pickA5 không bị override bởi .active */
+#pickA5.active {
+    border-right: 2px solid rgb(87, 85, 85) !important;
+}
+
+.active.pick::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Team A - Màu vàng */
+#pickA1.active.pick::after,
+#pickA2.active.pick::after,
+#pickA3.active.pick::after,
+#pickA4.active.pick::after,
+#pickA5.active.pick::after {
+    animation: borderGlowTeamA 2s linear infinite;
+}
+
+/* Team B - Màu đỏ */
+#pickB1.active.pick::after,
+#pickB2.active.pick::after,
+#pickB3.active.pick::after,
+#pickB4.active.pick::after,
+#pickB5.active.pick::after {
+    animation: borderGlowTeamB 2s linear infinite;
+}
+.heroheroImage {
+    position: absolute;
+}
+
+#countdown {
+    font-family: 'SVNOMNY'; /* Sử dụng font chữ tùy chỉnh */
+    font-size: 50px; /* Kích thước font chữ */
+    color: #ffffff; /* Màu chữ */
+    text-align: center;
+    bottom: 5px;
+    text-transform: uppercase;
+}
+
+@keyframes glow {
+    0% { box-shadow: 0 0 10px yellow; }
+    50% { box-shadow: 0 0 20px orange; }
+    100% { box-shadow: 0 0 10px yellow; }
+}
+
+
+
+@keyframes zoomInOut {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+/* Team A - Màu vàng (#ffd900) */
+@keyframes borderGlowTeamA {
+    0% {
+        box-shadow: 
+            inset 0 0 10px rgba(255, 217, 0, 0.9),
+            inset 0 0 20px rgba(255, 217, 0, 0.7),
+            inset 0 0 30px rgba(255, 217, 0, 0.5),
+            inset 0 0 40px rgba(255, 217, 0, 0.4),
+            inset 0 0 50px rgba(255, 217, 0, 0.3),
+            inset 0 0 60px rgba(255, 217, 0, 0.2),
+            inset 0 0 70px rgba(255, 217, 0, 0.15),
+            inset 0 0 80px rgba(255, 217, 0, 0.1);
+    }
+    50% {
+        box-shadow: 
+            inset 0 0 10px rgba(255, 217, 0, 0),
+            inset 0 0 20px rgba(255, 217, 0, 0),
+            inset 0 0 30px rgba(255, 217, 0, 0),
+            inset 0 0 40px rgba(255, 217, 0, 0),
+            inset 0 0 50px rgba(255, 217, 0, 0),
+            inset 0 0 60px rgba(255, 217, 0, 0),
+            inset 0 0 70px rgba(255, 217, 0, 0),
+            inset 0 0 80px rgba(255, 217, 0, 0);
+    }
+    100% {
+        box-shadow: 
+            inset 0 0 10px rgba(255, 217, 0, 0.9),
+            inset 0 0 20px rgba(255, 217, 0, 0.7),
+            inset 0 0 30px rgba(255, 217, 0, 0.5),
+            inset 0 0 40px rgba(255, 217, 0, 0.4),
+            inset 0 0 50px rgba(255, 217, 0, 0.3),
+            inset 0 0 60px rgba(255, 217, 0, 0.2),
+            inset 0 0 70px rgba(255, 217, 0, 0.15),
+            inset 0 0 80px rgba(255, 217, 0, 0.1);
+    }
+}
+
+/* Team B - Màu đỏ */
+@keyframes borderGlowTeamB {
+    0% {
+        box-shadow: 
+            inset 0 0 10px rgba(255, 50, 50, 0.9),
+            inset 0 0 20px rgba(255, 50, 50, 0.7),
+            inset 0 0 30px rgba(255, 50, 50, 0.5),
+            inset 0 0 40px rgba(255, 50, 50, 0.4),
+            inset 0 0 50px rgba(255, 50, 50, 0.3),
+            inset 0 0 60px rgba(255, 50, 50, 0.2),
+            inset 0 0 70px rgba(255, 50, 50, 0.15),
+            inset 0 0 80px rgba(255, 50, 50, 0.1);
+    }
+    50% {
+        box-shadow: 
+            inset 0 0 10px rgba(255, 50, 50, 0),
+            inset 0 0 20px rgba(255, 50, 50, 0),
+            inset 0 0 30px rgba(255, 50, 50, 0),
+            inset 0 0 40px rgba(255, 50, 50, 0),
+            inset 0 0 50px rgba(255, 50, 50, 0),
+            inset 0 0 60px rgba(255, 50, 50, 0),
+            inset 0 0 70px rgba(255, 50, 50, 0),
+            inset 0 0 80px rgba(255, 50, 50, 0);
+    }
+    100% {
+        box-shadow: 
+            inset 0 0 10px rgba(255, 50, 50, 0.9),
+            inset 0 0 20px rgba(255, 50, 50, 0.7),
+            inset 0 0 30px rgba(255, 50, 50, 0.5),
+            inset 0 0 40px rgba(255, 50, 50, 0.4),
+            inset 0 0 50px rgba(255, 50, 50, 0.3),
+            inset 0 0 60px rgba(255, 50, 50, 0.2),
+            inset 0 0 70px rgba(255, 50, 50, 0.15),
+            inset 0 0 80px rgba(255, 50, 50, 0.1);
+    }
+}
+
+.active-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+
+    z-index: 1; /* Đảm bảo hình ảnh nằm trên hình tướng nhưng dưới tên tuyển thủ */
+    display: none; /* Ẩn mặc định */
+}
+
+/* .pick-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    z-index: 1; 
+} */
+
+/* .teamA .pick-background {
+    display: block;
+    background-image: url('/assets/Overlay/backgroundA.png');
+}
+
+.teamB .pick-background {
+    display: block;
+    background-image: url('/assets/Overlay/backgroundB.png');
+} */
+
+.heroImage {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+}
+
+/* Previous Picks Styles */
+.previous-container {
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+    align-items: flex-start;
+    justify-content: start;
+    width: 100%;
+    height: 100%;
+}
+
+.previous-match {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    align-items: center;
+}
+
+.match-title {
+    font-family: 'SVNOMNY';
+    color: white;
+    text-align: center;
+    font-size: 24px;
+    text-transform: uppercase;
+}
+
+.previous-picks-grid {
+    display: flex;
+    gap: 5px;
+}
+
+/* PreviousListB: đảo chiều để G1,G2,... nằm bên phải */
+#previousContainerB .previous-match {
+    flex-direction: row-reverse;
+}
+
+.previous-pick {
+    width: 50px;
+    height: 50px;
+    background-size: cover;
+    background-position: top;
+
+}
+/* ========== FANDOM WAR STYLES ========== */
+
+/* Common styles for both teams */
+.fandomwar-container {
+    width: 1920px;
+    height: 1080px;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.vote-bar-wrapper {
+    position: relative;
+    display: inline-block;
+    align-self: flex-end;
+}
+
+.vote-bar-bg {
+    display: block;
+    width: auto;
+    height: auto;
+}
+
+.vote-bar-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Team A - chữ FANDOM WAR nằm sát mép trái */
+.team-a .vote-bar-content {
+    justify-content: flex-start;
+}
+
+.team-a .fandom-war-text {
+    margin-left: 5px;
+}
+
+/* Team B - chữ FANDOM WAR nằm sát mép phải */
+.team-b .vote-bar-content {
+    justify-content: flex-end;
+}
+
+.team-b .fandom-war-text {
+    margin-right: 5px;
+}
+
+.vote-bar-progress-container {
+    position: absolute;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.fandom-war-text {
+    position: relative;
+    z-index: 10;
+    font-family: 'SVNOMNYBOLD';
+    font-size: 15px;
+    font-weight: normal;
+    color: #000000;
+    pointer-events: none;
+}
+
+.vote-count-text {
+    position: absolute;
+    font-family: 'SVNOMNYBOLD';
+    top: 50%;
+    font-size: 15px;
+    transform: translateY(-50%);
+    z-index: 10;
+    font-weight: 900;
+    color: #000000;
+    pointer-events: none;
+}
+
+.particles {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 15;
+}
+
+.particle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: rgba(255, 215, 0, 0.8);
+    border-radius: 50%;
+    animation: float-up 3s ease-out forwards;
+}
+
+/* Effect videos */
+.effect-video {
+    z-index: 20;
+    pointer-events: none;
+    width: 280px;
+    height: 76px;
+    flex-shrink: 0;
+    align-self: flex-end;
+    /* Debug: background: rgba(255, 0, 0, 0.3); */
+}
+
+.effect-video video {
+    display: block;
+    width: 280px;
+    height: 76px;
+    object-fit: fill;
+    /* Debug: border: 2px solid yellow; */
+}
+
+/* Team A - hiệu ứng lật 180 độ */
+.team-a .effect-video video {
+    transform: scaleX(-1);
+}
+
+/* Team A specific styles */
+.team-a .vote-bar-progress-container {
+    right: 0;
+    mask: url('/assets/Overlay/fandomwarBackgroundA.png') no-repeat center;
+    mask-size: contain;
+    -webkit-mask: url('/assets/Overlay/fandomwarBackgroundA.png') no-repeat center;
+    -webkit-mask-size: contain;
+}
+
+.team-a .vote-bar-progress {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, 
+        rgba(255, 196, 19, 0.8) 0%, 
+        rgba(255, 196, 19, 0.9) 100%
+    );
+    transition: width 0.3s ease-out;
+}
+
+.team-a .vote-count-text {
+    right: 40px;
+}
+
+.team-a .max-reached {
+    animation: pulse-team-a 0.5s ease-in-out infinite alternate;
+}
+
+/* Team B specific styles */
+.team-b .vote-bar-progress-container {
+    left: 0;
+    mask: url('/assets/Overlay/fandomwarBackgroundB.png') no-repeat center;
+    mask-size: contain;
+    -webkit-mask: url('/assets/Overlay/fandomwarBackgroundB.png') no-repeat center;
+    -webkit-mask-size: contain;
+}
+
+.team-b .vote-bar-progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, 
+        rgba(255, 196, 19, 0.8) 0%, 
+        rgba(255, 196, 19, 0.9) 100%
+    );
+    transition: width 0.3s ease-out;
+}
+
+.team-b .vote-count-text {
+    left: 40px;
+}
+
+.team-b .max-reached {
+    animation: pulse-team-b 0.5s ease-in-out infinite alternate;
+}
+
+/* Animations */
+@keyframes float-up {
+    0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-200px) scale(0);
+    }
+}
+
+@keyframes pulse-team-a {
+    0% {
+        background: linear-gradient(90deg, 
+            rgba(255, 196, 19, 0.8) 0%, 
+            rgba(255, 196, 19, 0.9) 100%
+        );
+    }
+    100% {
+        background: linear-gradient(90deg, 
+            rgba(255, 196, 19, 1) 0%, 
+            rgba(255, 196, 19, 1) 100%
+        );
+    }
+}
+
+@keyframes pulse-team-b {
+    0% {
+        background: linear-gradient(90deg, 
+            rgba(255, 196, 19, 0.8) 0%, 
+            rgba(255, 196, 19, 0.9) 100%
+        );
+    }
+    100% {
+        background: linear-gradient(90deg, 
+            rgba(255, 196, 19, 1) 0%, 
+            rgba(255, 196, 19, 1) 100%
+        );
+    }
+}
+
+/* ========== CAMERA OVERLAY STYLES ========== */
+/* Container: 800x600px */
+/* Background image gốc: 280x228px */
+/* Phần đáy (logo + tên): 280x62px */
+/* Video gốc: 280x166px */
+/* Scale factor to fit height: 600/228 = 2.632 */
+/* Background sau scale: 280*2.632 = 737px width, 228*2.632 = 600px height */
+#cameraContainer {
+    width: 750px;
+    height: 600px;
+    position: relative;
+    background-size: cover;  /* Fill entire container */
+    background-position: center;
+    background-repeat: no-repeat;
+    overflow: hidden;
+    z-index: 2;  /* Background overlay nằm trên video */
+}
+
+/* Camera frame: Original 280x166px
+   Scale để vừa khít với khung cam (có thể bóp méo)
+   Video nằm phía sau background overlay */
+#cameraFrame {
+    position: absolute;
+    width: 750px;  /* 280 * 2.632 = 737px (vừa khít khung cam) */
+    height: 500px;  /* 166 * 2.632 = 437px (vừa khít khung cam) */
+    top: 42%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border: none;
+    background: #000000;
+    z-index: 1;  /* Video nằm phía sau background */
+    /* Video có thể bóp méo để vừa khít khung */
+    object-fit: fill;
+}
+
+#playerName {
+    position: absolute;
+    bottom: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'GS3DRUKCONDSUPER', sans-serif;
+    font-size: 100px;  /* Scaled from 24px: 24 * 2.64 (background scale factor) = 63px */
+    font-weight: normal;
+    text-align: center;
+    z-index: 10;
+}
+
+/* Team A: tên màu đen */
+body.team-a #playerName {
+    color: #000;
+    text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.8);
+}
+
+/* Team B: tên màu trắng */
+body.team-b #playerName {
+    color: #fff;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.hidden {
+    display: none;
+}
+
+/* ========== VOTECHAT OVERLAY STYLES ========== */
+.votechat-body {
+    width: 1920px;
+    height: 1080px;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.votechat-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.votechat-inner {
+    width: 460px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.votechat-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0;
+    width: 460px;
+    height: 60px;
+}
+
+.votechat-container.team-b .votechat-row {
+    flex-direction: row-reverse;
+}
+
+.votechat-score {
+    width: 110px;
+    height: 60px;
+    flex: 0 0 110px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'SVNOMNYBOLD', sans-serif;
+    font-size: 32px;
+    font-weight: 700;
+}
+
+.votechat-score.team-a {
+    background: #ffd900;
+    color: #000000;
+}
+
+.votechat-score.team-b {
+    background: #ff0000;
+    color: #ffffff;
+}
+
+.votechat-score-value {
+    display: inline-block;
+}
+
+.votechat-text {
+    width: 350px;
+    height: 60px;
+    flex: 0 0 350px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 0 8px;
+    font-family: 'SVNOMNYBOLD', sans-serif;
+    font-size: 18px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #000000;
+    line-height: 1.2;
+    overflow: hidden;
+    background: transparent;
+}
+
+.votechat-label {
+    color: #000000;
+    white-space: nowrap;
+    font-size: 36px;
+}
+
+.votechat-label.gift-mode {
+    font-size: 20px;
+}
+
+.votechat-keyword {
+    font-size: 44px;
+    padding: 0 4px;
+    white-space: nowrap;
+    animation: votechatKeywordPulse 2s ease-in-out infinite;
+}
+
+.votechat-keyword.team-a {
+    color: #FFD700;
+}
+
+.votechat-keyword.team-b {
+    color: #FF3B3B;
+}
+
+.votechat-keyword.gift-mode {
+    font-size: 24px;
+    padding: 0 4px;
+}
+
+.votechat-gift-img {
+    height: 48px;
+    width: auto;
+    object-fit: contain;
+    margin: 0 4px;
+}
+
+.votechat-gift-anim {
+    animation: votechatFadeInOut 10s linear;
+}
+
+@keyframes votechatFadeInOut {
+    0% {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    10% {
+        opacity: 1;
+        transform: scale(1.0);
+    }
+    90% {
+        opacity: 1;
+        transform: scale(1.02);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(1.05);
+    }
+}
+
+@keyframes votechatKeywordPulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.08);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* ========== OBJECTIVE OVERLAY STYLES ========== */
+.objective-container {
+    width: 100%;
+    height: 100vh;
+    background-color: transparent;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.objective-row {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+/* Dòng Rồng - ở vị trí trên (cố định) */
+#objective-rong {
+    top: calc(50% - 5px);
+    transform: translateY(-50%);
+}
+
+/* Dòng Tà thần - ở vị trí dưới (cố định) */
+#objective-tathan {
+    top: calc(50% + 40px);
+    transform: translateY(-50%);
+}
+
+/* Team A: icon left - timer right */
+.team-a .objective-row {
+    flex-direction: row;
+}
+
+/* Team B: timer left - icon right */
+.team-b .objective-row {
+    flex-direction: row-reverse;
+}
+
+.objective-icon {
+    height: 50px;
+    width: auto;
+    object-fit: contain;
+    filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* Icon tà thần có đổ bóng trắng
+#objective-tathan .objective-icon {
+    filter: drop-shadow(2px 2px 4px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 8px rgba(255, 255, 255, 0.6));
+} */
+
+.objective-timer {
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'SVNOMNY', sans-serif;
+    font-size: 24px;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    border-radius: 4px;
+}
+

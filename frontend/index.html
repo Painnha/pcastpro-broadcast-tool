@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>PCastPro - Manager</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="css/styleManager.css" />
+  <link rel="stylesheet" href="css/obs-manager.css" />
+  <script src="https://unpkg.com/obs-websocket-js@5.0.0/dist/obs-ws.min.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <div class="container">
+    <!-- Header (user-section) -->
+    <div class="user-section">
+      <span id="userInfo">Xin chào, triphong2002</span>
+      <div class="theme-section">
+        <label for="themeSelect">Theme:</label>
+        <select id="themeSelect" class="theme-dropdown">
+          <option value="apl2025">Apl2025</option>
+        </select>
+      </div>
+      <button id="guideButton" class="btn btn-info">📖 Hướng dẫn</button>
+      <button id="logoutButton">Đăng xuất</button>
+    </div>
+
+    <!-- Main Tabs Navigation -->
+    <div class="main-tabs">
+      <button class="main-tab active" data-tab="banpick">Ban-Pick</button>
+      <button class="main-tab" data-tab="obs-manager">Quản lý OBS</button>
+    </div>
+
+    <!-- Ban-Pick Tab Content -->
+    <div id="banpick-tab" class="tab-content active banpick-tab-content">
+      <!-- Banpick Wrapper -->
+      <div class="banpick-wrapper">
+        <!-- Left: Banpick + Previous -->
+        <div class="banpick-left">
+          <!-- Banpick Container -->
+          <div class="banpick-container">
+            <!-- Team A -->
+            <div class="section left">
+              <h2 class="team-title blue">Đội A</h2>
+
+              <!-- Objectives -->
+              <div class="objectives">
+                <button class="obj-button">Rồng <span class="badge">1:30</span></button>
+                <button class="obj-button">Tà thần <span class="badge">1:30</span></button>
+              </div>
+
+              <!-- Bans -->
+              <div class="slots">
+                <div class="slot ban" id="banA1"></div>
+                <div class="slot ban" id="banA2"></div>
+                <div class="slot ban" id="banA3"></div>
+                <div class="slot ban" id="banA4"></div>
+              </div>
+
+              <!-- Picks -->
+              <div class="slots">
+                <div class="slot pick teamA" id="pickA1">
+                  <img src="images/logoLane/Top.svg" class="lane-logo" alt="Top" />
+                  <div class="player-name"></div>
+                </div>
+                <div class="slot pick teamA" id="pickA2">
+                  <img src="images/logoLane/rung.svg" class="lane-logo" alt="Jungle" />
+                  <div class="player-name"></div>
+                </div>
+                <div class="slot pick teamA" id="pickA3">
+                  <img src="images/logoLane/Mid.svg" class="lane-logo" alt="Mid" />
+                  <div class="player-name"></div>
+                </div>
+                <div class="slot pick teamA" id="pickA4">
+                  <img src="images/logoLane/ad.svg" class="lane-logo" alt="AD" />
+                  <div class="player-name"></div>
+                </div>
+                <div class="slot pick teamA" id="pickA5">
+                  <img src="images/logoLane/support.svg" class="lane-logo" alt="Support" />
+                  <div class="player-name"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Countdown giữa -->
+            <div id="countdown">60</div>
+
+            <!-- Team B -->
+            <div class="section right">
+              <h2 class="team-title red">Đội B</h2>
+
+              <!-- Objectives -->
+              <div class="objectives">
+                <button class="obj-button">Rồng <span class="badge">1:30</span></button>
+                <button class="obj-button">Tà thần <span class="badge">1:30</span></button>
+              </div>
+
+              <!-- Bans -->
+              <div class="slots">
+                <div class="slot ban" id="banB1"></div>
+                <div class="slot ban" id="banB2"></div>
+                <div class="slot ban" id="banB3"></div>
+                <div class="slot ban" id="banB4"></div>
+              </div>
+
+              <!-- Picks -->
+              <div class="slots">
+                <div class="slot pick teamB" id="pickB1">
+                  <img src="images/logoLane/support.svg" class="lane-logo" alt="Support" />
+                  <div class="player-name"></div>
+                </div>
+                <div class="slot pick teamB" id="pickB2">
+                  <img src="images/logoLane/ad.svg" class="lane-logo" alt="AD" />
+                  <div class="player-name"></div>
+                </div>
+                <div class="slot pick teamB" id="pickB3">
+                  <img src="images/logoLane/Mid.svg" class="lane-logo" alt="Mid" />
+                  <div class="player-name"></div>
+                </div>
+                <div class="slot pick teamB" id="pickB4">
+                  <img src="images/logoLane/rung.svg" class="lane-logo" alt="Jungle" />
+                  <div class="player-name"></div>
+                </div>
+                <div class="slot pick teamB" id="pickB5">
+                  <img src="images/logoLane/Top.svg" class="lane-logo" alt="Top" />
+                  <div class="player-name"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Previous Picks -->
+          <div class="previous-picks">
+            <div class="previous-header">
+              <h5>PREVIOUS PICKS</h5>
+              <div class="previous-buttons">
+                <button id="nextMatchButton" class="btn btn-purple">Ván tiếp theo</button>
+                <button id="resetPreviousButton" class="btn btn-gray">Reset</button>
+              </div>
+            </div>
+            <div id="previousMatchesContainer">
+              <div class="no-previous">Chưa có trận nào</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Fandom War -->
+        <div class="banpick-right">
+          <div class="fandomwar-section">
+            <div class="fandomwar-header">
+              <h3>FANDOM WAR</h3>
+            </div>
+
+            <!-- Platform Tabs -->
+            <!-- <div class="platform-tabs">
+              <button class="platform-tab active" data-platform="tiktok">
+                <span class="tab-icon">🎵</span> TikTok Live
+              </button>
+              <button class="platform-tab" data-platform="facebook">
+                <span class="tab-icon">📘</span> Facebook Live
+              </button>
+            </div> -->
+
+            <!-- TikTok Tab Content -->
+            <div class="platform-content active" id="tiktokContent">
+              <!-- TikTok Live ID Input -->
+              <div class="tiktok-connect">
+                <label for="tiktokLiveId">TikTok Live ID:</label>
+                <div class="connect-row">
+                  <input type="text" id="tiktokLiveId" placeholder="Nhập username TikTok..." class="platform-input" />
+                  <button id="connectTikTokBtn" class="btn btn-green btn-sm">Kết nối</button>
+                  <button id="disconnectTikTokBtn" class="btn btn-red btn-sm" disabled>Ngắt kết nối</button>
+                  <button id="resetTikTokBtn" class="btn btn-yellow btn-sm">Reset</button>
+                </div>
+                <!-- <div class="connect-row" style="margin-top: 8px;">
+                  <input type="text" id="tiktokSessionId" placeholder="sessionid (tùy chọn - cookie TikTok)..." class="platform-input" style="font-size: 12px;" />
+                  <small style="color: #888; display: block; margin-top: 4px;">💡 Lấy cookie "sessionid" từ Application > Cookies > tiktok.com (sau khi đăng nhập TikTok trên trình duyệt)</small>
+                </div> -->
+              </div>
+
+              <!-- Team Keywords Input -->
+              <div class="team-keywords">
+                <div class="keyword-group">
+                  <div class="keyword-label">
+                    <label for="teamAKeyword">Từ khóa Team A:</label>
+                    <input type="number" id="teamAVotes" class="vote-input" value="0" min="0" />
+                  </div>
+                  <div class="keyword-input-wrapper">
+                    <input type="text" id="teamAKeyword" placeholder="VD: SGP, #TeamA, A..." class="keyword-input" />
+                    <button class="gift-dropdown-btn" id="teamAGiftBtn">V</button>
+                  </div>
+                  <div class="gift-dropdown" id="teamAGiftDropdown">
+                    <div class="gift-dropdown-header">Chọn quà đếm vote:</div>
+                    <div class="gift-options">
+                      <!-- Gifts will be loaded dynamically from database -->
+                    </div>
+                  </div>
+                </div>
+                <div class="keyword-group">
+                  <div class="keyword-label">
+                    <label for="teamBKeyword">Từ khóa Team B:</label>
+                    <input type="number" id="teamBVotes" class="vote-input" value="0" min="0" />
+                  </div>
+                  <div class="keyword-input-wrapper">
+                    <input type="text" id="teamBKeyword" placeholder="VD: FPT, #TeamB, B..." class="keyword-input" />
+                    <button class="gift-dropdown-btn" id="teamBGiftBtn">V</button>
+                  </div>
+                  <div class="gift-dropdown" id="teamBGiftDropdown">
+                    <div class="gift-dropdown-header">Chọn quà đếm vote:</div>
+                    <div class="gift-options">
+                      <!-- Gifts will be loaded dynamically from database -->
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- End TikTok Content -->
+
+            <!-- Facebook Tab Content -->
+            <div class="platform-content" id="facebookContent">
+              <!-- Facebook Video & Token Input -->
+              <div class="facebook-connect">
+                <div class="input-group">
+                  <label for="facebookVideoId">Facebook Video ID:</label>
+                  <input type="text" id="facebookVideoId" placeholder="Nhập Video ID..." class="platform-input" />
+                  <small class="input-hint">VD: 123456789012345</small>
+                </div>
+
+                <div class="input-group">
+                  <label for="facebookAccessToken">Page Access Token:</label>
+                  <input type="password" id="facebookAccessToken" placeholder="Nhập Page Access Token..."
+                    class="platform-input" />
+                  <small class="input-hint">Xem hướng dẫn lấy token trong file FACEBOOK_LIVE_SETUP.md</small>
+                </div>
+
+                <div class="connect-row">
+                  <button id="connectFacebookBtn" class="btn btn-green btn-sm">Kết nối</button>
+                  <button id="disconnectFacebookBtn" class="btn btn-red btn-sm" disabled>Ngắt kết nối</button>
+                  <button id="resetFacebookBtn" class="btn btn-yellow btn-sm">Reset</button>
+                </div>
+              </div>
+
+              <!-- Team Keywords Input (Facebook) -->
+              <div class="team-keywords">
+                <div class="keyword-group">
+                  <div class="keyword-label">
+                    <label for="teamAKeywordFb">Từ khóa Team A:</label>
+                    <input type="number" id="teamAVotesFb" class="vote-input" value="0" min="0" />
+                  </div>
+                  <input type="text" id="teamAKeywordFb" placeholder="VD: SGP, #TeamA, A..." class="keyword-input" />
+                </div>
+                <div class="keyword-group">
+                  <div class="keyword-label">
+                    <label for="teamBKeywordFb">Từ khóa Team B:</label>
+                    <input type="number" id="teamBVotesFb" class="vote-input" value="0" min="0" />
+                  </div>
+                  <input type="text" id="teamBKeywordFb" placeholder="VD: FPT, #TeamB, B..." class="keyword-input" />
+                </div>
+              </div>
+            </div>
+            <!-- End Facebook Content -->
+
+            <!-- Live Comments Display (Shared) -->
+            <div class="live-comments">
+              <div class="comments-header">
+                <h4>Live Comments</h4>
+                <span id="viewersCount" class="badge">👁️ 0</span>
+              </div>
+              <div id="commentsContainer" class="comments-container">
+                <div class="no-comments">Chưa có bình luận nào</div>
+              </div>
+            </div>
+
+            <!-- Effect Test Controls -->
+            <div class="effect-controls">
+              <div class="effect-controls-header">
+                <h5>Test Hiệu Ứng</h5>
+              </div>
+              <div class="effect-buttons">
+                <button id="testEffect1" class="effect-btn" data-votes="25">Level 1 (25)</button>
+                <button id="testEffect2" class="effect-btn" data-votes="75">Level 2 (75)</button>
+                <button id="testEffect3" class="effect-btn" data-votes="150">Level 3 (150)</button>
+                <button id="testEffect4" class="effect-btn" data-votes="250">Level 4 (250)</button>
+                <button id="testEffect5" class="effect-btn" data-votes="350">Level 5 (350)</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Section -->
+      <div class="bottom-section">
+        <!-- Trái: Heroes -->
+        <div class="heroes">
+          <div class="menuHero">
+            <div class="section-button">
+              <button id="startButton" class="btn btn-blue">Bắt đầu</button>
+              <button id="lockButton" class="btn btn-red">Khóa Tướng</button>
+              <button id="autoFillButton" class="btn btn-orange">Auto Fill Test</button>
+              <div id="error-message"></div>
+            </div>
+            <input type="text" id="searchInput" placeholder="Tìm kiếm tướng..." />
+          </div>
+          <div class="hero-grid"><!-- JS render heroes --></div>
+        </div>
+
+        <!-- Phải: Match settings -->
+        <div class="match-settings">
+          <div class="match-header">
+            <h3>TÙY CHỈNH TRẬN</h3>
+          </div>
+
+          <!-- Chỉnh tên tuyển thủ -->
+          <div class="section-editName">
+            <textarea id="nameInput" placeholder="Tuyển thủ 1,Tuyển thủ 2,..."></textarea>
+            <button id="editNameButton">Chỉnh sửa</button>
+          </div>
+
+          <!-- Tên đội & tỷ số -->
+          <div class="section-teaminfo">
+            <h4>TÊN ĐỘI & TỶ SỐ</h4>
+            <div class="team-input-row">
+              <div class="team-input">
+                <label for="teamAName">Tên đội A:</label>
+                <input type="text" id="teamAName" placeholder="Nhập tên đội A" maxlength="30" />
+              </div>
+              <div class="score-input">
+                <label for="scoreA">Điểm:</label>
+                <input type="number" id="scoreA" value="0" min="0" max="99" />
+              </div>
+            </div>
+            <div class="team-input-row">
+              <div class="team-input">
+                <label for="teamBName">Tên đội B:</label>
+                <input type="text" id="teamBName" placeholder="Nhập tên đội B" maxlength="30" />
+              </div>
+              <div class="score-input">
+                <label for="scoreB">Điểm:</label>
+                <input type="number" id="scoreB" value="0" min="0" max="99" />
+              </div>
+            </div>
+            <button id="saveTeamInfoButton" class="btn btn-green">Lưu thông tin đội</button>
+            <button id="swapTeamInfoButton" class="btn btn-blue">Đổi đội</button>
+            <button id="resetTeamInfoButton" class="btn btn-yellow">Reset</button>
+            <div id="teaminfo-message"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OBS Manager Tab Content -->
+    <div id="obs-manager-tab" class="tab-content obs-manager-tab-content">
+      <div class="obs-manager-container">
+        <div class="obs-header">
+          <div class="obs-logo"><i class="fas fa-layer-group"></i> OBS MANAGER</div>
+          <div class="conn-controls">
+            <input type="text" id="obsIp" value="localhost" placeholder="IP">
+            <input type="text" id="obsPort" value="4455" placeholder="Port">
+            <input type="password" id="obsPwd" placeholder="Password">
+            <button class="obs-btn-sm obs-btn-connect" onclick="obsManagerAPI.connectOBS()"
+              id="obsBtnConnect">Connect</button>
+          </div>
+        </div>
+
+        <div class="obs-tabs">
+          <div class="obs-tab active" data-obs-view="obs-dashboard"
+            onclick="obsManagerAPI.switchOBSView('obs-dashboard')">MÀN HÌNH QUẢN LÝ</div>
+          <div class="obs-tab" data-obs-view="obs-setup" onclick="obsManagerAPI.switchOBSView('obs-setup')">SETUP & LIÊN
+            KẾT</div>
+        </div>
+
+        <div class="obs-main">
+          <div id="obs-setup" class="obs-view">
+            <div class="obs-setup-split-container">
+              <!-- Left: Scenes/Sources Viewer -->
+              <div class="obs-scenes-viewer-section">
+                <!-- Left sub-column: Scenes -->
+                <div class="viewer-scenes-column">
+                  <div class="viewer-header">
+                    <h3><i class="fas fa-images"></i> SCENES</h3>
+                  </div>
+                  <div id="obs-viewer-scenes-list">
+                    <div style="color: #666; padding: 10px;">Chưa quét. Bấm "Quét Source từ OBS"</div>
+                  </div>
+                </div>
+                
+                <!-- Right sub-column: Sources -->
+                <div class="viewer-sources-column">
+                  <div class="viewer-header">
+                    <h3><i class="fas fa-layer-group"></i> SOURCES</h3>
+                  </div>
+                  <div id="obs-viewer-sources-list">
+                    <div style="color: #666; padding: 10px;">Chọn một scene để xem sources</div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Right: Link Groups (existing) -->
+              <div class="obs-link-section">
+                <div class="scan-bar">
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <button class="obs-btn-sm"
+                      style="background: var(--primary); color: white; font-size: 14px; padding: 10px 20px;"
+                      onclick="obsManagerAPI.scanSources()">
+                      <i class="fas fa-sync"></i> Quét Source từ OBS
+                    </button>
+                    <span style="font-size: 13px; color: #888;">*Quét lại khi bạn thêm source mới trong OBS</span>
+                  </div>
+                </div>
+
+                <!-- Link Groups Management Section -->
+                <div class="link-groups-section">
+                  <h3 style="margin: 0 0 15px 0; color: white; font-size: 16px;">
+                    <i class="fas fa-link"></i> QUẢN LÝ NHÓM LIÊN KẾT
+                  </h3>
+                  <div id="obs-link-groups-container">
+                    <div style="text-align: center; color: #666; padding: 20px;">
+                      Chưa có nhóm liên kết nào. Tạo nhóm bằng cách click nút <i class="fas fa-link"></i> ở source trong
+                      danh sách bên trái.
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Swap Source Settings Section -->
+                <div class="swap-source-section" style="margin-top: 30px;">
+                  <h3 style="margin: 0 0 15px 0; color: white; font-size: 16px;">
+                    <i class="fas fa-exchange-alt"></i> CÀI ĐẶT SWAP SOURCE
+                  </h3>
+                  <div style="font-size: 12px; color: #888; margin-bottom: 10px;">
+                    Các cặp source này sẽ tự động swap nội dung khi bạn click "Đổi đội"
+                  </div>
+                  <button class="obs-btn-sm" 
+                    style="background: var(--accent); color: white; margin-bottom: 15px;"
+                    onclick="obsManagerAPI.openSwapPairDialog()">
+                    <i class="fas fa-plus"></i> Thêm Cặp Swap
+                  </button>
+                  <div id="obs-swap-pairs-container">
+                    <div style="text-align: center; color: #666; padding: 20px;">
+                      Chưa có cặp swap nào. Click "Thêm Cặp Swap" để tạo.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Source Picker Popup -->
+          <div class="source-picker-overlay" id="obsSourcePickerOverlay" onclick="obsManagerAPI.closeSourcePicker()">
+            <div class="source-picker-sidebar" id="obsSourcePickerSidebar" onclick="event.stopPropagation()">
+              <div class="source-picker-header">
+                <div class="source-picker-title" id="obsSourcePickerTitle">Thêm Source vào Nhóm</div>
+                <button class="source-picker-close" onclick="obsManagerAPI.closeSourcePicker()">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+              <div class="source-picker-content">
+                <div class="scenes-column">
+                  <div class="column-title">Scenes</div>
+                  <div id="obs-scenes-list-container"></div>
+                </div>
+                <div class="sources-column" id="obs-sources-column">
+                  <div class="column-title">Sources</div>
+                  <div style="color: #666; font-size: 12px; padding: 10px;">Chọn một scene để xem sources</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Swap Pair Dialog -->
+          <div class="swap-pair-dialog-overlay" id="obsSwapPairDialogOverlay" onclick="obsManagerAPI.closeSwapPairDialog()">
+            <div class="swap-pair-dialog" onclick="event.stopPropagation()">
+              <div class="swap-pair-dialog-header">
+                <h3>Thêm Cặp Swap Source</h3>
+                <button class="source-picker-close" onclick="obsManagerAPI.closeSwapPairDialog()">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+              <div class="swap-pair-dialog-content">
+                <div class="swap-pair-columns">
+                  <div class="swap-pair-column">
+                    <h4>Team A</h4>
+                    <div id="swapPairTeamA"></div>
+                  </div>
+                  <div class="swap-pair-divider">
+                    <i class="fas fa-exchange-alt"></i>
+                  </div>
+                  <div class="swap-pair-column">
+                    <h4>Team B</h4>
+                    <div id="swapPairTeamB"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="swap-pair-dialog-footer">
+                <button class="obs-btn-sm" style="background: var(--primary);" onclick="obsManagerAPI.saveSwapPair()">
+                  <i class="fas fa-check"></i> OK
+                </button>
+                <button class="obs-btn-sm" style="background: #666;" onclick="obsManagerAPI.closeSwapPairDialog()">
+                  Hủy
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div id="obs-dashboard" class="obs-view active">
+            <div class="dashboard-grid">
+              <div class="obs-panel">
+                <div class="obs-panel-header">
+                  <span><i class="fas fa-thumbtack"></i> PINNED SOURCES</span>
+                  <button class="obs-icon-btn" onclick="obsManagerAPI.renderDashboard()" title="Refresh"><i
+                      class="fas fa-sync-alt"></i></button>
+                </div>
+                <div class="obs-panel-content" id="obs-pinned-container">
+                  <div style="text-align: center; color: #666; margin-top: 20px;">
+                    Chưa có source nào được ghim.<br>Vào tab <b>Setup</b> để ghim source quan trọng.
+                  </div>
+                </div>
+              </div>
+
+              <div class="dashboard-right-column">
+                <div class="dashboard-top-section">
+                  <div class="obs-panel" style="flex: 0 0 auto;">
+                    <div class="obs-panel-header"><span><i class="fas fa-images"></i> CHUYỂN CẢNH (SCENES)</span></div>
+                    <div class="obs-panel-content" style="max-height: 300px; overflow-y: auto;">
+                      <div class="scene-grid" id="obs-scene-grid">
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="obs-panel" style="flex: 0 0 auto;">
+                    <div class="obs-panel-header"><span><i class="fas fa-film"></i> HIGHLIGHT CONTROLS</span></div>
+                    <div class="obs-panel-content" style="padding: 10px;">
+                      <button class="obs-btn-sm"
+                        style="background: var(--danger); color: white; width: 100%; padding: 10px; font-size: 13px; margin-bottom: 8px;"
+                        onclick="obsManagerAPI.saveReplayBuffer()">
+                        <i class="fas fa-save"></i> LƯU BUFFER NGAY
+                      </button>
+                      
+                      <label style="font-size: 11px; color: #aaa; display: block; margin-bottom: 3px;">Tên Source:</label>
+                      <input type="text" class="obs-input-dark" id="obs-highlight-source-name"
+                        placeholder="video-highlight" style="margin-bottom: 8px; font-size: 12px; padding: 6px;">
+                      
+                      <label style="font-size: 11px; color: #aaa; display: block; margin-bottom: 3px;">Thư mục lưu Highlight:</label>
+                      <div style="display: flex; gap: 3px; margin-bottom: 8px; position: relative;">
+                        <input type="text" class="obs-input-dark" id="obs-highlight-folder"
+                          placeholder="E:/Highlights" style="font-size: 12px; padding: 6px; padding-right: 35px;">
+                        <button class="obs-btn-sm" 
+                          style="position: absolute; right: 0; top: 0; bottom: 0; background: transparent; border: none; color: var(--accent); padding: 0 8px;"
+                          onclick="document.getElementById('obs-folder-picker').click()" title="Chọn thư mục">
+                          <i class="fas fa-folder-open"></i>
+                        </button>
+                        <input type="file" id="obs-folder-picker" webkitdirectory directory style="display: none;" 
+                          onchange="obsManagerAPI.handleFolderSelect(event)">
+                      </div>
+                      
+                      <label style="font-size: 11px; color: #aaa; display: block; margin-bottom: 3px;">Đường dẫn Video:</label>
+                      <div style="display: flex; gap: 3px; position: relative;">
+                        <input type="text" class="obs-input-dark" id="obs-highlight-path"
+                          placeholder="C:/Videos/highlight.mp4" style="font-size: 12px; padding: 6px; padding-right: 35px;">
+                        <button class="obs-btn-sm" 
+                          style="position: absolute; right: 60px; top: 0; bottom: 0; background: transparent; border: none; color: var(--accent); padding: 0 8px;"
+                          onclick="document.getElementById('obs-file-picker').click()" title="Chọn file">
+                          <i class="fas fa-file-video"></i>
+                        </button>
+                        <input type="file" id="obs-file-picker" accept="video/*" style="display: none;" 
+                          onchange="obsManagerAPI.handleFileSelect(event)">
+                        <button class="obs-btn-sm" 
+                          style="position: absolute; right: 0; top: 0; bottom: 0; width: 55px; background: var(--primary); color: white; font-size: 12px;"
+                          onclick="obsManagerAPI.updateHighlight()">Set</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="dashboard-bottom-section" style="display: flex; flex-direction: row;">
+                  <div class="obs-panel camera-panel" style="flex: 1;">
+                    <div class="obs-panel-header">
+                      <span><i class="fas fa-video"></i> MONITOR (Virtual Camera)</span>
+                      <div style="display: flex; gap: 5px;">
+                        <button class="obs-btn-sm" style="background: #10b981; color: white;"
+                          onclick="obsManagerAPI.startCamera()" id="obsCameraBtn">Bật Cam</button>
+                        <button class="obs-btn-sm" style="background: #dc3545; color: white;"
+                          onclick="obsManagerAPI.stopCamera()">Tắt Cam</button>
+                      </div>
+                    </div>
+                    <div style="padding: 8px; background: black;">
+                      <div class="camera-video-container">
+                        <video id="obsCamPreview" autoplay playsinline muted></video>
+                      </div>
+                    </div>
+                    
+                    <!-- Background Swap Control -->
+                    <div style="padding: 8px; border-top: 1px solid #333;">
+                      <button class="obs-btn-sm" id="obs-endgame-bg-swap-btn"
+                        style="background: var(--accent); color: white; width: 100%; padding: 12px; font-size: 13px;"
+                        onclick="obsManagerAPI.swapEndgameBackground()">
+                        <i class="fas fa-image"></i> <span id="obs-endgame-bg-text">Đang dùng: End Game.png</span>
+                      </button>
+                    </div>
+
+                    <!-- Quick Controls (Objectives + Match) -->
+                    <div class="obs-quick-controls">
+                      <div class="quick-objectives">
+                        <div class="quick-team">
+                          <div class="quick-team-title team-a">Team A</div>
+                          <div class="quick-btn-row">
+                            <button class="obs-btn-sm quick-obj-btn" data-team="A" data-obj="rong">
+                              🐉 Rồng
+                            </button>
+                            <button class="obs-btn-sm quick-obj-btn" data-team="A" data-obj="tathan">
+                              🔥 Tà thần
+                            </button>
+                          </div>
+                        </div>
+                        <div class="quick-team">
+                          <div class="quick-team-title team-b">Team B</div>
+                          <div class="quick-btn-row">
+                            <button class="obs-btn-sm quick-obj-btn" data-team="B" data-obj="rong">
+                              🐉 Rồng
+                            </button>
+                            <button class="obs-btn-sm quick-obj-btn" data-team="B" data-obj="tathan">
+                              🔥 Tà thần
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="quick-match-actions">
+                        <button id="quick-next-match" class="obs-btn-sm quick-match-btn primary">Ván tiếp theo</button>
+                        <button id="quick-swap-team" class="obs-btn-sm quick-match-btn">Đổi đội</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Camera Management Section -->
+                  <div class="obs-panel camera-management-panel" style="flex: 1;">
+                    <div class="obs-panel-header">
+                      <span><i class="fas fa-users"></i> CAMERA MANAGEMENT</span>
+                      <div style="display: flex; gap: 5px;">
+                        <button class="obs-btn-sm" style="background: var(--success); color: white;"
+                          onclick="obsManagerAPI.loadPlayerNamesFromPicks()">
+                          <i class="fas fa-sync"></i> Lấy tên từ Pick
+                        </button>
+                        <button class="obs-btn-sm" style="background: var(--primary); color: white;"
+                          onclick="obsManagerAPI.saveCameraData()">
+                          <i class="fas fa-save"></i> Lưu
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <!-- Auto-Rotation Controls -->
+                    <div class="auto-rotation-panel" style="padding: 10px; background: #1e1e1e; border-bottom: 1px solid #333;">
+                      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                          <button id="autoRotationToggle" class="obs-btn-sm" style="background: #333; color: white; min-width: 120px;"
+                            onclick="obsManagerAPI.toggleAutoRotation()">
+                            <i class="fas fa-sync-alt"></i> <span id="autoRotationText">Bật Auto</span>
+                          </button>
+                          <div id="autoRotationStatus" style="color: #888; font-size: 13px;">
+                            Chưa bật
+                          </div>
+                        </div>
+                      </div>
+                      <div style="font-size: 11px; color: #666; padding: 5px 0;">
+                        💡 <strong>Gợi ý:</strong> Click 📁 để chọn ảnh (tự động nén), hoặc paste link VDO.ninja/Cloudinary
+                      </div>
+                    </div>
+                    
+                    <div class="camera-management-content">
+                      <!-- Team A -->
+                      <div class="camera-team-section">
+                        <h3 class="camera-team-title">TEAM A</h3>
+                        
+                        <div class="camera-player-row">
+                          <button class="camera-lane-btn lane-top" onclick="obsManagerAPI.selectLane('Top')" title="Chọn lane Top">
+                            <img src="images/logoLane/Top.svg" alt="Top" class="lane-icon">
+                            <span>TOP</span>
+                          </button>
+                          <input type="text" class="camera-player-name" id="playerName_A_Top" placeholder="Tên tuyển thủ" 
+                                 onchange="obsManagerAPI.updatePlayerNameFromInput('A', 'Top', this.value)">
+                          <div style="display: flex; gap: 5px; flex: 1;">
+                            <input type="text" class="camera-link" id="cameraLink_A_Top" placeholder="VDO.ninja link hoặc click 📁 để chọn hình">
+                            <button class="obs-icon-btn" onclick="obsManagerAPI.selectImageForCamera('A', 'Top')" title="Chọn hình" style="flex-shrink: 0;">
+                              <i class="fas fa-folder-open"></i>
+                            </button>
+                          </div>
+                        </div>
+
+                        <div class="camera-player-row">
+                          <button class="camera-lane-btn lane-jung" onclick="obsManagerAPI.selectLane('Jung')" title="Chọn lane Rừng">
+                            <img src="images/logoLane/rung.svg" alt="Jung" class="lane-icon">
+                            <span>RỪNG</span>
+                          </button>
+                          <input type="text" class="camera-player-name" id="playerName_A_Jung" placeholder="Tên tuyển thủ"
+                                 onchange="obsManagerAPI.updatePlayerNameFromInput('A', 'Jung', this.value)">
+                          <div style="display: flex; gap: 5px; flex: 1;">
+                            <input type="text" class="camera-link" id="cameraLink_A_Jung" placeholder="VDO.ninja link hoặc click 📁 để chọn hình">
+                            <button class="obs-icon-btn" onclick="obsManagerAPI.selectImageForCamera('A', 'Jung')" title="Chọn hình" style="flex-shrink: 0;">
+                              <i class="fas fa-folder-open"></i>
+                            </button>
+                          </div>
+                        </div>
+
+                        <div class="camera-player-row">
+                          <button class="camera-lane-btn lane-mid" onclick="obsManagerAPI.selectLane('Mid')" title="Chọn lane Giữa">
+                            <img src="images/logoLane/Mid.svg" alt="Mid" class="lane-icon">
+                            <span>GIỮA</span>
+                          </button>
+                          <input type="text" class="camera-player-name" id="playerName_A_Mid" placeholder="Tên tuyển thủ"
+                                 onchange="obsManagerAPI.updatePlayerNameFromInput('A', 'Mid', this.value)">
+                          <div style="display: flex; gap: 5px; flex: 1;">
+                            <input type="text" class="camera-link" id="cameraLink_A_Mid" placeholder="VDO.ninja link hoặc click 📁 để chọn hình">
+                            <button class="obs-icon-btn" onclick="obsManagerAPI.selectImageForCamera('A', 'Mid')" title="Chọn hình" style="flex-shrink: 0;">
+                              <i class="fas fa-folder-open"></i>
+                            </button>
+                          </div>
+                        </div>
+
+                        <div class="camera-player-row">
+                          <button class="camera-lane-btn lane-adc" onclick="obsManagerAPI.selectLane('ADC')" title="Chọn lane Xạ thủ">
+                            <img src="images/logoLane/ad.svg" alt="ADC" class="lane-icon">
+                            <span>XẠ THỦ</span>
+                          </button>
+                          <input type="text" class="camera-player-name" id="playerName_A_ADC" placeholder="Tên tuyển thủ"
+                                 onchange="obsManagerAPI.updatePlayerNameFromInput('A', 'ADC', this.value)">
+                          <div style="display: flex; gap: 5px; flex: 1;">
+                            <input type="text" class="camera-link" id="cameraLink_A_ADC" placeholder="VDO.ninja link hoặc click 📁 để chọn hình">
+                            <button class="obs-icon-btn" onclick="obsManagerAPI.selectImageForCamera('A', 'ADC')" title="Chọn hình" style="flex-shrink: 0;">
+                              <i class="fas fa-folder-open"></i>
+                            </button>
+                          </div>
+                        </div>
+
+                        <div class="camera-player-row">
+                          <button class="camera-lane-btn lane-support" onclick="obsManagerAPI.selectLane('Support')" title="Chọn lane Hỗ trợ">
+                            <img src="images/logoLane/support.svg" alt="Support" class="lane-icon">
+                            <span>HỖ TRỢ</span>
+                          </button>
+                          <input type="text" class="camera-player-name" id="playerName_A_Support" placeholder="Tên tuyển thủ"
+                                 onchange="obsManagerAPI.updatePlayerNameFromInput('A', 'Support', this.value)">
+                          <div style="display: flex; gap: 5px; flex: 1;">
+                            <input type="text" class="camera-link" id="cameraLink_A_Support" placeholder="VDO.ninja link hoặc click 📁 để chọn hình">
+                            <button class="obs-icon-btn" onclick="obsManagerAPI.selectImageForCamera('A', 'Support')" title="Chọn hình" style="flex-shrink: 0;">
+                              <i class="fas fa-folder-open"></i>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Team B -->
+                      <div class="camera-team-section">
+                        <h3 class="camera-team-title team-b">TEAM B</h3>
+                        
+                        <div class="camera-player-row">
+                          <button class="camera-lane-btn lane-top" onclick="obsManagerAPI.selectLane('Top')" title="Chọn lane Top">
+                            <img src="images/logoLane/Top.svg" alt="Top" class="lane-icon">
+                            <span>TOP</span>
+                          </button>
+                          <input type="text" class="camera-player-name" id="playerName_B_Top" placeholder="Tên tuyển thủ"
+                                 onchange="obsManagerAPI.updatePlayerNameFromInput('B', 'Top', this.value)">
+                          <div style="display: flex; gap: 5px; flex: 1;">
+                            <input type="text" class="camera-link" id="cameraLink_B_Top" placeholder="VDO.ninja link hoặc click 📁 để chọn hình">
+                            <button class="obs-icon-btn" onclick="obsManagerAPI.selectImageForCamera('B', 'Top')" title="Chọn hình" style="flex-shrink: 0;">
+                              <i class="fas fa-folder-open"></i>
+                            </button>
+                          </div>
+                        </div>
+
+                        <div class="camera-player-row">
+                          <button class="camera-lane-btn lane-jung" onclick="obsManagerAPI.selectLane('Jung')" title="Chọn lane Rừng">
+                            <img src="images/logoLane/rung.svg" alt="Jung" class="lane-icon">
+                            <span>RỪNG</span>
+                          </button>
+                          <input type="text" class="camera-player-name" id="playerName_B_Jung" placeholder="Tên tuyển thủ"
+                                 onchange="obsManagerAPI.updatePlayerNameFromInput('B', 'Jung', this.value)">
+                          <div style="display: flex; gap: 5px; flex: 1;">
+                            <input type="text" class="camera-link" id="cameraLink_B_Jung" placeholder="VDO.ninja link hoặc click 📁 để chọn hình">
+                            <button class="obs-icon-btn" onclick="obsManagerAPI.selectImageForCamera('B', 'Jung')" title="Chọn hình" style="flex-shrink: 0;">
+                              <i class="fas fa-folder-open"></i>
+                            </button>
+                          </div>
+                        </div>
+
+                        <div class="camera-player-row">
+                          <button class="camera-lane-btn lane-mid" onclick="obsManagerAPI.selectLane('Mid')" title="Chọn lane Giữa">
+                            <img src="images/logoLane/Mid.svg" alt="Mid" class="lane-icon">
+                            <span>GIỮA</span>
+                          </button>
+                          <input type="text" class="camera-player-name" id="playerName_B_Mid" placeholder="Tên tuyển thủ"
+                                 onchange="obsManagerAPI.updatePlayerNameFromInput('B', 'Mid', this.value)">
+                          <div style="display: flex; gap: 5px; flex: 1;">
+                            <input type="text" class="camera-link" id="cameraLink_B_Mid" placeholder="VDO.ninja link hoặc click 📁 để chọn hình">
+                            <button class="obs-icon-btn" onclick="obsManagerAPI.selectImageForCamera('B', 'Mid')" title="Chọn hình" style="flex-shrink: 0;">
+                              <i class="fas fa-folder-open"></i>
+                            </button>
+                          </div>
+                        </div>
+
+                        <div class="camera-player-row">
+                          <button class="camera-lane-btn lane-adc" onclick="obsManagerAPI.selectLane('ADC')" title="Chọn lane Xạ thủ">
+                            <img src="images/logoLane/ad.svg" alt="ADC" class="lane-icon">
+                            <span>XẠ THỦ</span>
+                          </button>
+                          <input type="text" class="camera-player-name" id="playerName_B_ADC" placeholder="Tên tuyển thủ"
+                                 onchange="obsManagerAPI.updatePlayerNameFromInput('B', 'ADC', this.value)">
+                          <div style="display: flex; gap: 5px; flex: 1;">
+                            <input type="text" class="camera-link" id="cameraLink_B_ADC" placeholder="VDO.ninja link hoặc click 📁 để chọn hình">
+                            <button class="obs-icon-btn" onclick="obsManagerAPI.selectImageForCamera('B', 'ADC')" title="Chọn hình" style="flex-shrink: 0;">
+                              <i class="fas fa-folder-open"></i>
+                            </button>
+                          </div>
+                        </div>
+
+                        <div class="camera-player-row">
+                          <button class="camera-lane-btn lane-support" onclick="obsManagerAPI.selectLane('Support')" title="Chọn lane Hỗ trợ">
+                            <img src="images/logoLane/support.svg" alt="Support" class="lane-icon">
+                            <span>HỖ TRỢ</span>
+                          </button>
+                          <input type="text" class="camera-player-name" id="playerName_B_Support" placeholder="Tên tuyển thủ"
+                                 onchange="obsManagerAPI.updatePlayerNameFromInput('B', 'Support', this.value)">
+                          <div style="display: flex; gap: 5px; flex: 1;">
+                            <input type="text" class="camera-link" id="cameraLink_B_Support" placeholder="VDO.ninja link hoặc click 📁 để chọn hình">
+                            <button class="obs-icon-btn" onclick="obsManagerAPI.selectImageForCamera('B', 'Support')" title="Chọn hình" style="flex-shrink: 0;">
+                              <i class="fas fa-folder-open"></i>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <audio id="lockSound" src="../shared/audio/PickEffect.mp3"></audio>
+  </div>
+
+  <script src="js/banpickManager.js"></script>
+  <script type="module" src="js/index.js"></script>
+  <script src="js/fandomWar.js"></script>
+  <script src="js/obs-manager.js"></script>
+  <script>
+    // Tab switching logic
+    document.addEventListener('DOMContentLoaded', function () {
+      const tabs = document.querySelectorAll('.main-tab');
+      const tabContents = document.querySelectorAll('.tab-content');
+
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          const targetTab = tab.getAttribute('data-tab');
+
+          // Remove active class from all tabs and contents
+          tabs.forEach(t => t.classList.remove('active'));
+          tabContents.forEach(tc => tc.classList.remove('active'));
+
+          // Add active class to clicked tab and corresponding content
+          tab.classList.add('active');
+          const targetContent = document.getElementById(targetTab + '-tab');
+
+          // First, hide all tabs
+          tabContents.forEach(tc => tc.classList.remove('active'));
+
+          // Scroll to top immediately before showing new content
+          window.scrollTo({ top: 0, behavior: 'instant' });
+
+          // Then show the target content
+          setTimeout(() => {
+            targetContent.classList.add('active');
+            // Ensure we're at the top
+            window.scrollTo({ top: 0, behavior: 'instant' });
+          }, 10);
+        });
+      });
+    });
+  </script>
+</body>
+
+</html>

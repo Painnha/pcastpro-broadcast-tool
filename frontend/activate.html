@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kích Hoạt License Key</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 50px;
+        }
+        input, button {
+            margin: 10px;
+            padding: 10px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .error, .success {
+            margin: 10px;
+            font-size: 16px;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <h1>Kích Hoạt License Key</h1>
+    <input type="text" id="licenseInput" placeholder="Nhập License Key" />
+    <button id="activateButton">Kích Hoạt</button>
+    <p id="message"></p>
+    
+    <div style="margin-top: 30px; text-align: center;">
+        <p>Trang này đã được thay thế. <a href="/login.html" style="color: #007BFF; text-decoration: none;">Đăng nhập tại đây</a></p>
+        <p>Chưa có tài khoản? <a href="/register.html" style="color: #007BFF; text-decoration: none;">Đăng ký ngay</a></p>
+    </div>
+
+    <script type="module" src="js/activate.js"></script>
+
+
+</body>
+</html>

@@ -16,7 +16,7 @@
 
 **PCastPro** loại bỏ hoàn toàn sự hỗn loạn khi phải thao tác thủ công trên OBS Studio trong các buổi phát sóng esports áp lực cao. Ứng dụng cung cấp một bảng điều khiển web thống nhất, đồng bộ giai đoạn Ban/Pick, quản lý scene & source trên OBS, và tích hợp tương tác mạng xã hội trực tiếp — tất cả theo thời gian thực, chỉ từ một tab trình duyệt duy nhất.
 
-> 🎥 **Xem Video Demo Đầy Đủ:** [INSERT_YOUTUBE_LINK_HERE] *(Hướng dẫn quy trình phát sóng hoàn chỉnh trong 2–3 phút)*
+> 🎥 **Xem Video Demo Đầy Đủ:** https://www.youtube.com/watch?v=--rLZCz46pg&t=1s *(Hướng dẫn quy trình phát sóng hoàn chỉnh trong 2–3 phút)*
 
 </div>
 

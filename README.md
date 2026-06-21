@@ -16,7 +16,7 @@
 
 **PCastPro** eliminates the chaos of manually manipulating OBS Studio during high-pressure esports broadcasts. It provides a unified web-based control panel that synchronizes ban/pick phases, manages OBS scenes & sources, and integrates live social media interactions — all in real-time, from a single browser tab.
 
-> 🎥 **Watch the Full Demo Video:** [INSERT_YOUTUBE_LINK_HERE] *(2–3 minute walkthrough of the complete broadcast workflow)*
+> 🎥 **Watch the Full Demo Video:** https://www.youtube.com/watch?v=--rLZCz46pg&t=1s *(2–3 minute walkthrough of the complete broadcast workflow)*
 
 </div>
 

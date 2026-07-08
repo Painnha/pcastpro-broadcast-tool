@@ -225,7 +225,8 @@ const login = async (req, res) => {
                 displayName: user.displayName,
                 role: user.role,
                 currentTheme: user.currentTheme,
-                ownedThemes: user.ownedThemes
+                ownedThemes: user.ownedThemes,
+                permissions: user.permissions || []
             }
         });
     } catch (error) {
@@ -282,7 +283,8 @@ const checkSession = async (req, res) => {
                 displayName: user.displayName,
                 role: user.role,
                 currentTheme: user.currentTheme,
-                ownedThemes: user.ownedThemes
+                ownedThemes: user.ownedThemes,
+                permissions: user.permissions || []
             },
             deviceId,
             lastActivity: new Date()
@@ -296,9 +298,51 @@ const checkSession = async (req, res) => {
     }
 };
 
+// API: Assign permissions to user (admin only)
+const assignPermissions = async (req, res) => {
+    const { userEmail, permissions } = req.body;
+    const { role } = req.user;
+    
+    if (role !== 'admin') {
+        return res.status(403).send({ message: 'Chỉ admin mới có thể thực hiện thao tác này' });
+    }
+    
+    if (!userEmail || !Array.isArray(permissions)) {
+        return res.status(400).send({ message: 'Email và danh sách permissions (mảng) là bắt buộc' });
+    }
+    
+    const validPermissions = ['basic', 'fandomwar', 'quanlyobs'];
+    const invalidPermissions = permissions.filter(p => !validPermissions.includes(p));
+    if (invalidPermissions.length > 0) {
+        return res.status(400).send({ message: `Quyền không hợp lệ: ${invalidPermissions.join(', ')}` });
+    }
+    
+    try {
+        const user = await User.findOne({ email: userEmail });
+        if (!user) {
+            return res.status(404).send({ message: 'Người dùng không tồn tại' });
+        }
+        
+        user.permissions = permissions;
+        await user.save();
+        
+        res.send({ 
+            message: `Cập nhật quyền thành công cho ${userEmail}`,
+            user: {
+                email: user.email,
+                permissions: user.permissions
+            }
+        });
+    } catch (error) {
+        console.error('Error assigning permissions:', error);
+        res.status(500).send({ message: 'Lỗi khi gán quyền' });
+    }
+};
+
 module.exports = {
     sendOTP,
     verifyOTP,
     login,
-    checkSession
+    checkSession,
+    assignPermissions
 };

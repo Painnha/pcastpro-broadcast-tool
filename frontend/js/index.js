@@ -71,6 +71,7 @@ const checkUserSession = async () => {
         
         if (data.user) {
             updateUserInfo(data.user);
+            applyPermissions(data.user.permissions || [], data.user.role);
         }
         return true;
     } catch (error) {
@@ -78,6 +79,86 @@ const checkUserSession = async () => {
         alert(error.message || 'Đã có lỗi xảy ra khi kiểm tra phiên đăng nhập.');
         API.logout();
         return false;
+    }
+};
+
+/**
+ * Applies permission restrictions to the UI elements.
+ * @param {string[]} permissions - List of permission keys owned by the user
+ * @param {'user'|'admin'} role - User role
+ */
+const applyPermissions = (permissions, role) => {
+    const hasBasic = role === 'admin' || permissions.includes('basic');
+    const hasFandom = role === 'admin' || permissions.includes('fandomwar');
+    const hasObs = role === 'admin' || permissions.includes('quanlyobs');
+
+    const tabBanpick = document.querySelector('.main-tab[data-tab="banpick"]');
+    const tabObs = document.querySelector('.main-tab[data-tab="obs-manager"]');
+    
+    const banpickTabContent = document.getElementById('banpick-tab');
+    const obsManagerTabContent = document.getElementById('obs-manager-tab');
+    const noPermissionMessage = document.getElementById('no-permission-message');
+    const mainTabsContainer = document.querySelector('.main-tabs');
+
+    // Reset default styling
+    if (noPermissionMessage) noPermissionMessage.style.display = 'none';
+
+    // Check if the user has no permissions at all
+    if (!hasBasic && !hasFandom && !hasObs) {
+        if (mainTabsContainer) mainTabsContainer.style.display = 'none';
+        if (banpickTabContent) banpickTabContent.classList.remove('active');
+        if (obsManagerTabContent) obsManagerTabContent.classList.remove('active');
+        if (tabBanpick) tabBanpick.classList.remove('active');
+        if (tabObs) tabObs.classList.remove('active');
+        if (noPermissionMessage) noPermissionMessage.style.display = 'block';
+        return;
+    }
+
+    if (mainTabsContainer) mainTabsContainer.style.display = 'flex';
+
+    // Show/hide tab headers
+    if (tabBanpick) {
+        tabBanpick.style.display = (hasBasic || hasFandom) ? 'inline-block' : 'none';
+    }
+    if (tabObs) {
+        tabObs.style.display = hasObs ? 'inline-block' : 'none';
+    }
+
+    // Toggle sub-components of Ban-Pick tab
+    const banpickLeft = document.querySelector('.banpick-left');
+    const banpickRight = document.querySelector('.banpick-right');
+    const bottomSection = document.querySelector('.bottom-section');
+
+    if (banpickLeft) {
+        banpickLeft.style.display = hasBasic ? 'block' : 'none';
+    }
+    if (banpickRight) {
+        banpickRight.style.display = hasFandom ? 'block' : 'none';
+        if (hasFandom && !hasBasic) {
+            // Fandom war only: let it span full width
+            banpickRight.style.flex = '1 1 100%';
+        } else {
+            // Default split width (30%)
+            banpickRight.style.flex = '0 0 30%';
+        }
+    }
+    if (bottomSection) {
+        bottomSection.style.display = hasBasic ? 'flex' : 'none';
+    }
+
+    // Auto-active the appropriate tab
+    // Remove active state from both
+    if (tabBanpick) tabBanpick.classList.remove('active');
+    if (tabObs) tabObs.classList.remove('active');
+    if (banpickTabContent) banpickTabContent.classList.remove('active');
+    if (obsManagerTabContent) obsManagerTabContent.classList.remove('active');
+
+    if (hasBasic || hasFandom) {
+        if (tabBanpick) tabBanpick.classList.add('active');
+        if (banpickTabContent) banpickTabContent.classList.add('active');
+    } else if (hasObs) {
+        if (tabObs) tabObs.classList.add('active');
+        if (obsManagerTabContent) obsManagerTabContent.classList.add('active');
     }
 };
 

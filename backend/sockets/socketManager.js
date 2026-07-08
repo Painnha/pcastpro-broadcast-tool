@@ -60,9 +60,12 @@ const initSockets = (server) => {
     });
 
     // --- WebSocket Server Events ---
-    wss.on('connection', (ws, req) => {
+    wss.on('connection', async (ws, req) => {
         let deviceId = null;
         let sessionId = null;
+        
+        ws.userPermissions = [];
+        ws.userRole = 'user';
         
         try {
             const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
@@ -77,6 +80,14 @@ const initSockets = (server) => {
                     deviceConnections.set(deviceId, new Set());
                 }
                 deviceConnections.get(deviceId).add(ws);
+                
+                // Fetch user permissions from database
+                const User = require('../models/User');
+                const user = await User.findById(decoded.userId);
+                if (user) {
+                    ws.userPermissions = user.permissions || [];
+                    ws.userRole = user.role;
+                }
             }
         } catch (error) {
             console.error('WS Connection Auth Error:', error.message);
@@ -103,6 +114,42 @@ const initSockets = (server) => {
                 } catch (error) {
                     // Session update failed silently
                 }
+            }
+
+            // Validate permissions before broadcasting control updates
+            try {
+                const msgObj = JSON.parse(message);
+                
+                if (msgObj.type !== 'connected') {
+                    if (!deviceId) {
+                        console.warn('WS Security warning: Blocked control message from anonymous connection');
+                        return;
+                    }
+                    
+                    const hasBasic = ws.userRole === 'admin' || ws.userPermissions.includes('basic');
+                    const hasFandom = ws.userRole === 'admin' || ws.userPermissions.includes('fandomwar');
+                    const hasObs = ws.userRole === 'admin' || ws.userPermissions.includes('quanlyobs');
+
+                    if (msgObj.type === 'fandomwar-config' || msgObj.type?.startsWith('tiktok-') || msgObj.type?.startsWith('facebook-')) {
+                        if (!hasFandom) {
+                            console.warn(`WS Security warning: Blocked fandomwar message from user without permission`);
+                            return;
+                        }
+                    } else if (msgObj.type === 'obs-command' || msgObj.type === 'obs-status') {
+                        if (!hasObs) {
+                            console.warn(`WS Security warning: Blocked obs message from user without permission`);
+                            return;
+                        }
+                    } else {
+                        // All other messages (banpick, custom match etc) require basic
+                        if (!hasBasic) {
+                            console.warn(`WS Security warning: Blocked control/banpick message from user without permission`);
+                            return;
+                        }
+                    }
+                }
+            } catch (err) {
+                // Ignore parse errors (non-JSON messages)
             }
 
             // Broadcast message to all connected clients

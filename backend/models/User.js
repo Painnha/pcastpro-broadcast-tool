@@ -58,6 +58,11 @@ const userSchema = new mongoose.Schema({
     ownedThemes: {
         type: [String],
         default: []
+    },
+    permissions: {
+        type: [String],
+        enum: ['basic', 'fandomwar', 'quanlyobs'],
+        default: []
     }
 }, {
     timestamps: true

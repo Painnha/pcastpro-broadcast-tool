@@ -2,13 +2,18 @@ const nodemailer = require('nodemailer');
 
 class OTPEmailService {
     constructor() {
+        const host = process.env.EMAIL_HOST || 'smtp.gmail.com';
+        const port = parseInt(process.env.EMAIL_PORT) || 587;
+        const user = process.env.EMAIL_USER || 'pcasthub@gmail.com';
+        const pass = process.env.EMAIL_PASS || 'rhnpgvjytouhgrwa';
+
         this.transporter = nodemailer.createTransport({
-            host: process.env.EMAIL_HOST,
-            port: process.env.EMAIL_PORT,
+            host: host,
+            port: port,
             secure: false, // true for 465, false for other ports
             auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS
+                user: user,
+                pass: pass
             }
         });
     }
@@ -16,7 +21,7 @@ class OTPEmailService {
     async sendOTP(email, otp) {
         const displayName = email.split('@')[0];
         const mailOptions = {
-            from: process.env.EMAIL_FROM,
+            from: process.env.EMAIL_FROM || 'Ban Pick System <pcasthub@gmail.com>',
             to: email,
             subject: 'Mã OTP xác thực đăng ký tài khoản - Ban Pick System',
             html: `

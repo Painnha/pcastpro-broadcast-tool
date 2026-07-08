@@ -3,6 +3,7 @@ const fs = require('fs');
 const OBSConfig = require('../models/OBSConfig');
 const User = require('../models/User');
 const Theme = require('../models/Theme');
+const { projectRoot } = require('../config/pathHelper');
 
 // API: Get OBS Config
 const getOBSConfig = async (req, res) => {
@@ -229,7 +230,7 @@ const serveOBSPage = async (req, res) => {
         }
         
         // Construct file path
-        const obsFilePath = path.join(__dirname, '..', '..', theme.path, 'obs', `${page}.html`);
+        const obsFilePath = path.join(projectRoot, theme.path, 'obs', `${page}.html`);
         
         // Check if file exists
         if (!fs.existsSync(obsFilePath)) {

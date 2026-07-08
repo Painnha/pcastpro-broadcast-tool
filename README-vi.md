@@ -364,6 +364,52 @@ scripts/quick-start.bat
 scripts/start-backend.bat
 ```
 
+### 📦 Đóng gói thành file EXE (Bảo mật mã nguồn)
+
+Để chia sẻ dự án cho người dùng cuối mà **không bị lộ mã nguồn** của thư mục `backend/` và các tài khoản MongoDB/SMTP Gmail nhạy cảm, bạn có thể biên dịch backend thành một file chạy `.exe` độc lập:
+
+1. Chạy file đóng gói dành cho nhà phát triển:
+   ```bash
+   scripts/build-exe.bat
+   ```
+   *Lệnh này sẽ tự động tải thư viện `pkg` và biên dịch toàn bộ mã nguồn backend thành file chạy `pcastpro-backend.exe` nằm ở thư mục gốc.*
+
+2. **Cấu trúc phân phối cho người dùng cuối** (Chỉ cần gửi các file này, tuyệt đối **không gửi thư mục `backend/`**):
+   ```
+   pcastpro-broadcast-tool/
+   ├── frontend/            # Giao diện web tĩnh
+   ├── shared/              # Assets dùng chung
+   ├── themes/              # Các gói theme giải đấu
+   ├── obs-data/            # Dữ liệu OBS (tự sinh)
+   ├── scripts/
+   │   ├── quick-start.bat  # Khách hàng nhấp đúp chạy file này
+   │   └── start-backend.bat
+   ├── pcastpro-backend.exe # File chạy chính đã được đóng gói bảo mật
+   └── .env.example         # File cấu hình mẫu (tuỳ chọn)
+   ```
+   *Người dùng cuối chỉ cần nhấp đúp chạy `quick-start.bat` hoặc file `pcastpro-backend.exe` để khởi chạy chương trình mà không cần cài đặt Node.js hay chạy lệnh npm nào cả.*
+
+---
+
+### 🔄 Cấu hình Tự động Cập nhật thông qua Netlify
+
+Hệ thống được tích hợp tính năng tự kiểm tra và cập nhật phiên bản mới trực tiếp trong file EXE mà không làm lộ link dự án GitHub:
+
+1. Thiết lập một dự án **Netlify** trỏ tới tên miền phụ của bạn (ví dụ: `pcastpro.nguyentriphong.id.vn`).
+2. Khi bạn cập nhật tính năng mới và muốn đẩy cập nhật đến toàn bộ người dùng:
+   - Chạy `scripts/build-exe.bat` để tạo file `pcastpro-backend.exe` mới.
+   - Nén các mục cần phân phối gồm: `frontend/`, `shared/`, `themes/`, `scripts/` và file `pcastpro-backend.exe` thành tệp ZIP đặt tên là **`pcastpro-latest.zip`**.
+   - Tạo file **`version.json`** mới với nội dung phiên bản cập nhật (ví dụ tăng lên `1.0.1`):
+     ```json
+     {
+       "version": "1.0.1",
+       "downloadUrl": "https://pcastpro.nguyentriphong.id.vn/pcastpro-latest.zip"
+     }
+     ```
+   - Upload 2 file `version.json` và `pcastpro-latest.zip` lên trang Netlify của bạn.
+3. Khi khách hàng khởi chạy file `pcastpro-backend.exe` trên máy của họ, chương trình sẽ tự động phát hiện phiên bản mới, tự tải bản ZIP về giải nén ghi đè (giữ lại file `.env` cấu hình riêng của khách nếu có) và tự khởi động lại phiên bản mới.
+
+
 ### 5️⃣ Truy Cập Ứng Dụng
 
 | URL | Mục Đích |

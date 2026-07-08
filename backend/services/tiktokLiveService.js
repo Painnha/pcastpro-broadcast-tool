@@ -1,4 +1,12 @@
-const { WebcastPushConnection } = require('tiktok-live-connector');
+let WebcastPushConnection = null;
+
+async function loadWebcastPushConnection() {
+    if (!WebcastPushConnection) {
+        const module = await import('../node_modules/tiktok-live-connector/dist/legacy.js');
+        WebcastPushConnection = module.WebcastPushConnection;
+    }
+    return WebcastPushConnection;
+}
 
 class TikTokLiveService {
     constructor() {
@@ -28,6 +36,8 @@ class TikTokLiveService {
         }
 
         try {
+            await loadWebcastPushConnection();
+            
             this.username = username;
             this.sessionId = sessionId;
             this.sessionIdSs = sessionIdSs;
@@ -35,7 +45,7 @@ class TikTokLiveService {
             // Simple configuration - theo pattern của code test thành công
             const options = {
                 processInitialData: true,           // ✅ Bật để nhận initial data
-                enableExtendedGiftInfo: true,       // ✅ Bật để có thông tin gift đầy đủ
+                enableExtendedGiftInfo: false,      // ❌ Tắt do signature endpoint EulerStream yêu cầu gói Business
                 fetchRoomInfoOnConnect: true        // ✅ Bật để fetch room info
             };
             
@@ -57,10 +67,10 @@ class TikTokLiveService {
             
             this.isConnected = true;
             
-            // Safely extract room info (có thể undefined)
-            const roomOwner = state?.roomInfo?.owner?.uniqueId || username;
-            const roomId = state?.roomInfo?.roomId || 'unknown';
-            const viewerCount = state?.roomInfo?.viewerCount || 0;
+            // Safely extract room info (tương thích cả v1.x/v2.1.0 và v2.4.0)
+            const roomOwner = state?.roomInfo?.data?.owner?.displayId || state?.roomInfo?.owner?.uniqueId || username;
+            const roomId = state?.roomId || state?.roomInfo?.roomId || 'unknown';
+            const viewerCount = state?.roomInfo?.data?.user_count || state?.roomInfo?.viewerCount || 0;
             
             console.log(`✅ Connected to @${roomOwner}`);
             console.log(`📊 Room ID: ${roomId}`);
@@ -89,10 +99,21 @@ class TikTokLiveService {
                 this.connection = null;
             }
             
-            this.triggerEvent('error', { error: error.message });
+            let errMsg = error.message;
+            if (!errMsg) {
+                if (error.errors && Array.isArray(error.errors)) {
+                    errMsg = error.errors.map(e => e.message || String(e)).join('; ');
+                } else if (error.info) {
+                    errMsg = error.info;
+                } else {
+                    errMsg = String(error);
+                }
+            }
             
-            console.error('❌ Connection error:', error.message);
-            throw new Error(`Không thể kết nối TikTok Live: ${error.message}`);
+            this.triggerEvent('error', { error: errMsg });
+            
+            console.error('❌ Connection error:', errMsg);
+            throw new Error(`Không thể kết nối TikTok Live: ${errMsg}`);
         }
     }
 
@@ -127,13 +148,13 @@ class TikTokLiveService {
             const comment = {
                 username: data.uniqueId,
                 nickname: data.nickname,
-                text: data.comment,
+                text: data.comment || data.content,
                 timestamp: new Date(),
                 profilePictureUrl: data.profilePictureUrl,
                 userId: data.userId
             };
             
-            // console.log(`💬 ${data.uniqueId}: ${data.comment}`);
+            // console.log(`💬 ${data.uniqueId}: ${data.comment || data.content}`);
             
             // Trigger all registered callbacks
             this.commentCallbacks.forEach(callback => {
@@ -150,23 +171,27 @@ class TikTokLiveService {
             // Chỉ xử lý khi:
             // - Gift type 1 (có streak) và repeatEnd = true (streak kết thúc)
             // - Gift type khác 1 (không có streak) thì xử lý luôn
-            const shouldProcess = (data.giftType === 1 && data.repeatEnd) || data.giftType !== 1;
+            const giftType = data.giftType !== undefined ? data.giftType : data.gift?.type;
+            const giftName = data.giftName || data.gift?.name;
+            const giftId = data.giftId || data.gift?.id;
+            
+            const shouldProcess = (giftType === 1 && data.repeatEnd) || giftType !== 1;
             
             if (shouldProcess) {
                 const giftComment = {
                     username: data.uniqueId,
                     nickname: data.nickname,
-                    text: `🎁 Tặng ${data.giftName} x${data.repeatCount || 1}`,
+                    text: `🎁 Tặng ${giftName} x${data.repeatCount || 1}`,
                     timestamp: new Date(),
                     profilePictureUrl: data.profilePictureUrl,
                     userId: data.userId,
                     isGift: true,
-                    giftName: data.giftName,
+                    giftName: giftName,
                     giftCount: data.repeatCount || 1,
-                    giftId: data.giftId
+                    giftId: giftId
                 };
                 
-                // console.log(`🎁 ${data.uniqueId} → ${data.giftName} x${data.repeatCount || 1}`);
+                // console.log(`🎁 ${data.uniqueId} → ${giftName} x${data.repeatCount || 1}`);
                 
                 // Trigger comment callbacks để hiển thị gift như comment
                 this.commentCallbacks.forEach(callback => {
@@ -201,11 +226,12 @@ class TikTokLiveService {
 
         // Room stats update (viewer count)
         this.connection.on('roomUser', (data) => {
+            const viewerCount = parseInt(data.viewerCount || data.total) || 0;
             const viewerData = {
-                viewerCount: data.viewerCount || 0
+                viewerCount: viewerCount
             };
             
-            // console.log(`📊 Viewers: ${data.viewerCount}`);
+            // console.log(`📊 Viewers: ${viewerCount}`);
             this.triggerEvent('viewers', viewerData);
         });
 
@@ -218,7 +244,13 @@ class TikTokLiveService {
 
         // Connection errors
         this.connection.on('error', (error) => {
-            const errorMsg = error.message || error.info || JSON.stringify(error);
+            let errorMsg = error.message || error.info;
+            if (!errorMsg && error.exception) {
+                errorMsg = error.exception.message || String(error.exception);
+            }
+            if (!errorMsg) {
+                errorMsg = JSON.stringify(error);
+            }
             
             // Ignore non-critical errors
             if (errorMsg.includes('Missing cursor')) {

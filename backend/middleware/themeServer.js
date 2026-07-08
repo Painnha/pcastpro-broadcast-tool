@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const express = require('express');
 const Theme = require('../models/Theme');
+const { projectRoot } = require('../config/pathHelper');
 
 const serveThemeAssets = async (req, res, next) => {
     const { themeFolder } = req.params;
@@ -24,7 +25,7 @@ const serveThemeAssets = async (req, res, next) => {
             return res.status(404).send('Theme not found');
         }
         
-        const themePath = path.join(__dirname, '..', '..', theme.path);
+        const themePath = path.join(projectRoot, theme.path);
         
         // Handle CSS files with path replacement
         if (req.path.endsWith('.css')) {

@@ -1,10 +1,11 @@
 const path = require('path');
 const fs = require('fs');
+const { projectRoot } = require('../config/pathHelper');
 
 // API: Get team information from text files
 const getTeamInfo = async (req, res) => {
     try {
-        const obsDataPath = path.join(__dirname, '..', '..', 'obs-data');
+        const obsDataPath = path.join(projectRoot, 'obs-data');
         
         let teamAName = 'team xanh';
         let teamBName = 'team đỏ';
@@ -62,7 +63,7 @@ const saveTeamInfo = async (req, res) => {
     
     try {
         // Create obs-data directory if it doesn't exist (at root level)
-        const obsDataPath = path.join(__dirname, '..', '..', 'obs-data');
+        const obsDataPath = path.join(projectRoot, 'obs-data');
         if (!fs.existsSync(obsDataPath)) {
             fs.mkdirSync(obsDataPath, { recursive: true });
         }

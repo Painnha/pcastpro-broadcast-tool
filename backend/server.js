@@ -3,7 +3,26 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const path = require('path');
 const http = require('http');
-require('dotenv').config();
+const fs = require('fs');
+
+const { projectRoot } = require('./config/pathHelper');
+const { checkForUpdates } = require('./services/updateService');
+
+// Load .env from project root first, fall back to backend/ folder
+const envPathRoot = path.join(projectRoot, '.env');
+const envPathBackend = path.join(projectRoot, 'backend', '.env');
+
+if (fs.existsSync(envPathRoot)) {
+    require('dotenv').config({ path: envPathRoot });
+} else if (fs.existsSync(envPathBackend)) {
+    require('dotenv').config({ path: envPathBackend });
+} else {
+    require('dotenv').config();
+}
+
+// Fallback values for security and convenience
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production';
+process.env.PORT = process.env.PORT || '3000';
 
 const connectDB = require('./config/db');
 const { serveThemeAssets } = require('./middleware/themeServer');
@@ -16,9 +35,6 @@ const teamRoutes = require('./routes/teamRoutes');
 const obsRoutes = require('./routes/obsRoutes');
 const fandomRoutes = require('./routes/fandomRoutes');
 
-// Initialize database connection
-connectDB();
-
 const app = express();
 const server = http.createServer(app);
 
@@ -29,9 +45,9 @@ initSockets(server);
 app.use(bodyParser.json());
 app.use(cors());
 
-// Serve static assets
-app.use(express.static(path.join(__dirname, '../frontend')));
-app.use(express.static(path.join(__dirname, '../shared')));
+// Serve static assets using projectRoot
+app.use(express.static(path.join(projectRoot, 'frontend')));
+app.use(express.static(path.join(projectRoot, 'shared')));
 
 // Dynamic theme asset routing
 app.use('/themes/:themeFolder', serveThemeAssets);
@@ -43,8 +59,18 @@ app.use(teamRoutes);
 app.use(obsRoutes);
 app.use(fandomRoutes);
 
-// Start Server
-const HTTP_PORT = process.env.PORT || 3000;
-server.listen(HTTP_PORT, () => {
-    console.log(`HTTP & WebSocket server running on http://localhost:${HTTP_PORT}`);
-});
+// Start Server wrapped in an async function to allow update checks first
+async function startServer() {
+    // Check and apply updates if packaged
+    await checkForUpdates();
+
+    // Initialize database connection
+    connectDB();
+
+    const HTTP_PORT = process.env.PORT || 3000;
+    server.listen(HTTP_PORT, () => {
+        console.log(`HTTP & WebSocket server running on http://localhost:${HTTP_PORT}`);
+    });
+}
+
+startServer();

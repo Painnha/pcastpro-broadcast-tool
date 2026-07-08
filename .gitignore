@@ -1,3 +1,5 @@
 /backend/node_modules
 *.log
 /backend/.env
+/pcastpro-backend.exe
+/netlify-update-dist/

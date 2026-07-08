@@ -7,21 +7,44 @@ echo.
 echo Dang khoi dong PCastPro...
 echo.
 
-:: Cap nhat tu GitHub
+:: Chuyen ve thu muc goc
 cd /d "%~dp0.."
+
+:: Kiem tra neu co file EXE da dong goi
+if exist "pcastpro-backend.exe" (
+    :: Mo trinh duyet
+    timeout /t 1 /nobreak >nul
+    start "" "http://localhost:3000"
+    
+    cls
+    echo.
+    echo [✓] PCastPro dang chay tai: http://localhost:3000 (Phien ban da dong goi)
+    echo.
+    echo Khong dong cua so nay!
+    echo.
+    pcastpro-backend.exe
+    goto end
+)
+
+:: Neu khong co EXE, chay o che do phat trien (Node.js)
+echo Khong tim thay file dong goi (pcastpro-backend.exe).
+echo Dang khoi dong o che do phat trien (Node.js)...
+echo.
+
+:: Cap nhat tu GitHub trong che do Dev neu co .git
 if exist ".git" (
-	echo Dang dong bo voi GitHub va ghi de thay doi...
+    echo Dang dong bo voi GitHub...
     git fetch origin
     git reset --hard origin/main
 )
 
 :: Chuyen den backend
-cd /d "%~dp0..\backend"
+cd /d "%~dp0backend"
 
 :: Cai dat dependencies neu chua co
 if not exist "node_modules" (
-    echo Dang cai dat dependencies...
-    npm install >nul 2>&1
+    echo Dang cai dat dependencies cho backend...
+    call npm install >nul 2>&1
     if errorlevel 1 goto npm_failed
 )
 
@@ -29,15 +52,14 @@ if not exist "node_modules" (
 timeout /t 1 /nobreak >nul
 start "" "http://localhost:3000"
 
-:: Khoi dong server
 cls
 echo.
-echo [✓] PCastPro dang chay tai: http://localhost:3000
+echo [✓] PCastPro dang chay tai: http://localhost:3000 (Che do phat trien Node.js)
 echo.
 echo Khong dong cua so nay!
 echo De dung server: Nhan Ctrl+C
 echo.
-npm run dev
+call npm run dev
 goto end
 
 :npm_failed

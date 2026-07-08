@@ -49,13 +49,6 @@ async function checkForUpdates() {
 
         if (remoteData && remoteData.version && isNewerVersion(remoteData.version, CURRENT_VERSION)) {
             console.log(`Tìm thấy phiên bản mới: ${remoteData.version} (Hiện tại: ${CURRENT_VERSION})`);
-            
-            // In ghi chú cập nhật
-            if (remoteData.releaseNotes && Array.isArray(remoteData.releaseNotes)) {
-                console.log('Các thay đổi mới trong phiên bản này:');
-                remoteData.releaseNotes.forEach(note => console.log(`- ${note}`));
-            }
-            
             console.log('Đang tải bản cập nhật...');
 
             const tempZipPath = path.join(projectRoot, 'update_temp.zip');

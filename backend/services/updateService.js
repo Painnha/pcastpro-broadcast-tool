@@ -59,7 +59,7 @@ async function checkForUpdates() {
             const currentPid = process.pid;
             const batPath = path.join(projectRoot, 'update_runner.bat');
             const extractDir = path.join(projectRoot, 'update_extract_temp');
-            const exeName = 'pcastpro-backend.exe';
+            const exeName = 'PCastPro.exe';
 
             // Write a visible .bat updater script with clear user-facing messages
             const batContent = [
@@ -127,7 +127,8 @@ async function checkForUpdates() {
                 'echo.',
                 'echo  ====================================================',
                 'echo.',
-                `(del /f /q "%~f0" & pause & exit)`,
+                'pause',
+                `(del /f /q "%~f0" & exit)`,
             ].join('\r\n');
 
             fs.writeFileSync(batPath, batContent, 'utf8');

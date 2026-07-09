@@ -2,6 +2,7 @@
 *.log
 /backend/.env
 /pcastpro-backend.exe
+/PCastPro.exe
 /netlify-update-dist/
 /release-archive/
 update_runner.*

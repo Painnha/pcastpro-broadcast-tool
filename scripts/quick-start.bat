@@ -11,7 +11,7 @@ echo.
 cd /d "%~dp0.."
 
 :: Kiem tra neu co file EXE da dong goi
-if exist "pcastpro-backend.exe" (
+if exist "PCastPro.exe" (
     :: Mo trinh duyet
     timeout /t 1 /nobreak >nul
     start "" "http://localhost:3000"
@@ -22,12 +22,12 @@ if exist "pcastpro-backend.exe" (
     echo.
     echo Khong dong cua so nay!
     echo.
-    pcastpro-backend.exe
+    PCastPro.exe
     goto end
 )
 
 :: Neu khong co EXE, chay o che do phat trien (Node.js)
-echo Khong tim thay file dong goi (pcastpro-backend.exe).
+echo Khong tim thay file dong goi (PCastPro.exe).
 echo Dang khoi dong o che do phat trien (Node.js)...
 echo.
 

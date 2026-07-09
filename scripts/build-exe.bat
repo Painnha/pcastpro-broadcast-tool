@@ -18,11 +18,11 @@ if not exist "node_modules\pkg" (
 )
 
 echo.
-echo Dang dong goi backend thanh file pcastpro-backend.exe...
+echo Dang dong goi backend thanh file PCastPro.exe...
 echo.
 
 :: Bien dich bang pkg. Dat dich den la node18-win-x64, dau ra dat tai thu muc goc.
-call npx pkg . --targets node18-win-x64 --output ../pcastpro-backend.exe
+call npx pkg . --targets node18-win-x64 --output ../PCastPro.exe
 
 if errorlevel 1 (
     echo.
@@ -32,7 +32,7 @@ if errorlevel 1 (
 )
 
 echo.
-echo [✓] THANH CONG! File 'pcastpro-backend.exe' da duoc tao o thu muc goc.
+echo [✓] THANH CONG! File 'PCastPro.exe' da duoc tao o thu muc goc.
 echo.
 pause
 exit /b 0

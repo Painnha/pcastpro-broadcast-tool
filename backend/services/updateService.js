@@ -4,7 +4,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 const { projectRoot } = require('../config/pathHelper');
 
-const CURRENT_VERSION = '1.0.0';
+const CURRENT_VERSION = '1.0.3';
 const UPDATE_CONFIG_URL = 'https://pcastpro.nguyentriphong.id.vn/version.json';
 
 // Helper to compare version numbers
@@ -38,109 +38,133 @@ async function downloadFile(url, destPath) {
 async function checkForUpdates() {
     // Only perform auto-update if running as a packaged EXE
     if (!process.pkg) {
-        console.log('Chế độ phát triển (Node.js): Bỏ qua tự động cập nhật.');
+        console.log('Development mode (Node.js): Skipping auto-update.');
         return;
     }
 
-    console.log('Đang kiểm tra cập nhật từ pcastpro.nguyentriphong.id.vn...');
+    console.log('Checking for updates from pcastpro.nguyentriphong.id.vn...');
     try {
         const response = await axios.get(UPDATE_CONFIG_URL, { timeout: 8000 });
         const remoteData = response.data;
 
         if (remoteData && remoteData.version && isNewerVersion(remoteData.version, CURRENT_VERSION)) {
-            console.log(`Tìm thấy phiên bản mới: ${remoteData.version} (Hiện tại: ${CURRENT_VERSION})`);
-            console.log('Đang tải bản cập nhật...');
+            console.log(`Found new version: ${remoteData.version} (Current: ${CURRENT_VERSION})`);
+            console.log('Downloading update...');
 
             const tempZipPath = path.join(projectRoot, 'update_temp.zip');
             await downloadFile(remoteData.downloadUrl, tempZipPath);
 
-            console.log('Tải thành công. Đang tiến hành cài đặt bản cập nhật...');
+            console.log('Download successful. Installing update...');
 
-            // Format paths for PowerShell (using forward slashes to avoid escape backslash issues)
-            const formattedZipPath = tempZipPath.replace(/\\/g, '/');
-            const formattedDestDir = projectRoot.replace(/\\/g, '/');
             const currentPid = process.pid;
+            const batPath = path.join(projectRoot, 'update_runner.bat');
+            const extractDir = path.join(projectRoot, 'update_extract_temp');
+            const exeName = 'pcastpro-backend.exe';
 
-            // PowerShell script to run in background after EXE exits
-            const psCommand = `
-                $ErrorActionPreference = 'Stop'
-                try {
-                    # Chờ tiến trình chính tắt hẳn
-                    while (Get-Process -Id ${currentPid} -ErrorAction SilentlyContinue) {
-                        Start-Sleep -Milliseconds 200
-                    }
-                    
-                    $zipPath = '${formattedZipPath}'
-                    $destDir = '${formattedDestDir}'
-                    $extractDir = "$destDir/update_extract_temp"
-                    
-                    # Tạo thư mục giải nén tạm
-                    if (Test-Path $extractDir) {
-                        Remove-Item -Path $extractDir -Recurse -Force -ErrorAction SilentlyContinue
-                    }
-                    New-Item -ItemType Directory -Force -Path $extractDir | Out-Null
-                    
-                    # Giải nén
-                    Expand-Archive -Path $zipPath -DestinationPath $extractDir -Force
-                    
-                    # Tìm thư mục chứa files thực tế bên trong ZIP
-                    $subDirs = Get-ChildItem -Path $extractDir -Directory
-                    $sourcePath = $extractDir
-                    if ($subDirs.Count -eq 1) {
-                        $sourcePath = $subDirs[0].FullName
-                    }
-                    
-                    # Sao chép đè tệp tin, bỏ qua file .env cấu hình cá nhân
-                    Get-ChildItem -Path $sourcePath -Recurse | ForEach-Object {
-                        $relativePath = $_.FullName.Substring($sourcePath.Length).TrimStart('\\').TrimStart('/')
-                        if ($relativePath) {
-                            $destFile = Join-Path $destDir $relativePath
-                            if ($_.PsIsContainer) {
-                                New-Item -ItemType Directory -Force -Path $destFile | Out-Null
-                            } else {
-                                if ($_.Name -ne '.env') {
-                                    Copy-Item -Path $_.FullName -Destination $destFile -Force
-                                }
-                            }
-                        }
-                    }
-                    
-                    # Dọn dẹp tệp tạm
-                    Remove-Item -Path $extractDir -Recurse -Force -ErrorAction SilentlyContinue
-                    Remove-Item -Path $zipPath -Force -ErrorAction SilentlyContinue
-                    
-                    # Khởi động lại ứng dụng mới
-                    $exePath = Join-Path $destDir 'pcastpro-backend.exe'
-                    Start-Process -FilePath $exePath
-                } catch {
-                    # Ghi lỗi ra file log nếu xảy ra sự cố
-                    $logFile = Join-Path '${formattedDestDir}' 'update_error.log'
-                    $_.Exception.Message | Out-File -FilePath $logFile -Append
-                }
-            `.replace(/\r?\n/g, ' '); // Compress into single line for PowerShell -Command parameter
+            // Write a visible .bat updater script with clear user-facing messages
+            const batContent = [
+                '@echo off',
+                'chcp 65001 >nul 2>&1',
+                'title PCastPro - Dang cap nhat...',
+                'color 0B',
+                'echo.',
+                'echo  ====================================================',
+                'echo   PCastPro - Tu dong cap nhat',
+                'echo  ====================================================',
+                'echo.',
+                'echo   [1/4] Dang cho ung dung dong lai...',
+                '',
+                ':waitloop',
+                `tasklist /FI "PID eq ${currentPid}" 2>NUL | find /I "${currentPid}" >NUL`,
+                'if not errorlevel 1 (',
+                '    timeout /t 1 /nobreak >nul',
+                '    goto waitloop',
+                ')',
+                'timeout /t 2 /nobreak >nul',
+                'echo   [OK] Ung dung da dong.',
+                'echo.',
+                '',
+                'echo   [2/4] Dang giai nen ban cap nhat...',
+                `if exist "${extractDir}" rmdir /s /q "${extractDir}"`,
+                `powershell -NoProfile -Command "Expand-Archive -Path '${tempZipPath}' -DestinationPath '${extractDir}' -Force"`,
+                'if errorlevel 1 (',
+                '    color 0C',
+                '    echo.',
+                '    echo   [LOI] Khong the giai nen file cap nhat!',
+                `    echo   Chi tiet loi da ghi vao update_error.log`,
+                `    echo %date% %time% Expand-Archive failed >> "${path.join(projectRoot, 'update_error.log')}"`,
+                '    echo.',
+                '    pause',
+                '    exit /b 1',
+                ')',
+                'echo   [OK] Giai nen thanh cong.',
+                'echo.',
+                '',
+                'echo   [3/4] Dang cai dat ban cap nhat...',
+                `set "SOURCE_DIR=${extractDir}"`,
+                `for /f "delims=" %%d in ('dir /b /ad "${extractDir}" 2^>nul') do (`,
+                `    set "SUBFOLDER=${extractDir}\\%%d"`,
+                ')',
+                `for /f %%c in ('dir /b /ad "${extractDir}" 2^>nul ^| find /c /v ""') do (`,
+                '    if %%c==1 set "SOURCE_DIR=%SUBFOLDER%"',
+                ')',
+                `robocopy "%SOURCE_DIR%" "${projectRoot}" /E /XF .env /R:5 /W:2 /NFL /NDL /NJH /NJS /NS /NC /NP`,
+                'echo   [OK] Cai dat thanh cong.',
+                'echo.',
+                '',
+                'echo   [4/4] Dang don dep...',
+                `if exist "${extractDir}" rmdir /s /q "${extractDir}"`,
+                `if exist "${tempZipPath}" del /f /q "${tempZipPath}"`,
+                'echo   [OK] Don dep xong.',
+                'echo.',
+                '',
+                'color 0A',
+                'echo  ====================================================',
+                'echo   CAP NHAT THANH CONG!',
+                'echo  ====================================================',
+                'echo.',
+                `echo   Vui lòng khởi động lại file "${exeName}" để sử dụng phiên bản mới.`,
+                'echo.',
+                'echo  ====================================================',
+                'echo.',
+                `(del /f /q "%~f0" & pause & exit)`,
+            ].join('\r\n');
 
-            // Spawn detached powershell process
-            const child = spawn('powershell.exe', [
-                '-NoProfile',
-                '-NonInteractive',
-                '-WindowStyle', 'Hidden',
-                '-Command', psCommand
-            ], {
+            fs.writeFileSync(batPath, batContent, 'utf8');
+
+            // Launch the updater in a NEW visible terminal window
+            const child = spawn('cmd.exe', ['/c', 'start', 'PCastPro Updater', batPath], {
                 detached: true,
                 stdio: 'ignore'
             });
             child.unref();
 
-            console.log('Ứng dụng sẽ tự đóng để hoàn tất cập nhật...');
+            console.log('Application will close to complete the update...');
             process.exit(0);
         } else {
-            console.log('PCastPro đã ở phiên bản mới nhất.');
+            console.log('PCastPro is up to date.');
         }
     } catch (error) {
-        console.error('Không thể kiểm tra hoặc cài đặt cập nhật:', error.message);
+        console.error('Failed to check or install updates:', error.message);
+        try {
+            const tempZipPath = path.join(projectRoot, 'update_temp.zip');
+            if (fs.existsSync(tempZipPath)) {
+                fs.unlinkSync(tempZipPath);
+                console.log('Cleaned up corrupted update file.');
+            }
+        } catch (cleanupError) {
+            // Ignore error during cleanup
+        }
+        console.log('Continuing to start the application with the current version.');
     }
 }
 
 module.exports = {
-    checkForUpdates
+    checkForUpdates,
+    CURRENT_VERSION
 };
+
+
+
+
+

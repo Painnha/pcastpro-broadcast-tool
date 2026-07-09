@@ -69,7 +69,15 @@ async function startServer() {
 
     const HTTP_PORT = process.env.PORT || 3000;
     server.listen(HTTP_PORT, () => {
-        console.log(`HTTP & WebSocket server running on http://localhost:${HTTP_PORT}`);
+        const { CURRENT_VERSION } = require('./services/updateService');
+        console.log('');
+        console.log('  ====================================');
+        console.log('   PCastPro Broadcast Tool');
+        console.log(`   Version : ${CURRENT_VERSION}`);
+        console.log(`   Port    : ${HTTP_PORT}`);
+        console.log(`   URL     : http://localhost:${HTTP_PORT}`);
+        console.log('  ====================================');
+        console.log('');
     });
 }
 

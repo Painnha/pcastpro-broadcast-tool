@@ -3,3 +3,7 @@
 /backend/.env
 /pcastpro-backend.exe
 /netlify-update-dist/
+/release-archive/
+update_runner.*
+update_temp.zip
+update_error.log

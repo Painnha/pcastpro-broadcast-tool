@@ -4,7 +4,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 const { projectRoot } = require('../config/pathHelper');
 
-const CURRENT_VERSION = '1.1.1';
+const CURRENT_VERSION = '2.0.2';
 const UPDATE_CONFIG_URL = 'https://pcastpro.nguyentriphong.id.vn/version.json';
 
 // Helper to compare version numbers
@@ -42,7 +42,17 @@ async function checkForUpdates() {
         return;
     }
 
-    console.log('Đang kiểm tra phiên bản mới...');
+    try {
+        const oldExe = path.join(projectRoot, 'PCastPro.exe.old');
+        if (fs.existsSync(oldExe)) {
+            fs.unlinkSync(oldExe);
+            console.log('ÄÃ£ dá»n dáº¹p file cÅ© PCastPro.exe.old');
+        }
+    } catch (e) {
+        console.error('KhÃ´ng thá»ƒ dá»n dáº¹p file cÅ© PCastPro.exe.old:', e.message);
+    }
+
+    console.log('dang kiem tra phien ban...');
     try {
         const response = await axios.get(UPDATE_CONFIG_URL, { timeout: 8000 });
         const remoteData = response.data;
@@ -101,6 +111,11 @@ async function checkForUpdates() {
                 'echo.',
                 '',
                 'echo   [3/4] Dang cai dat ban cap nhat...',
+                `taskkill /F /IM "${exeName}" >nul 2>&1`,
+                `if exist "${path.join(projectRoot, exeName)}" (`,
+                `    del /f /q "${path.join(projectRoot, exeName + '.old')}" >nul 2>&1`,
+                `    rename "${path.join(projectRoot, exeName)}" "${exeName + '.old'}" >nul 2>&1`,
+                ')',
                 `set "SOURCE_DIR=${extractDir}"`,
                 `for /f "delims=" %%d in ('dir /b /ad "${extractDir}" 2^>nul') do (`,
                 `    set "SUBFOLDER=${extractDir}\\%%d"`,
@@ -115,6 +130,7 @@ async function checkForUpdates() {
                 'echo   [4/4] Dang don dep...',
                 `if exist "${extractDir}" rmdir /s /q "${extractDir}"`,
                 `if exist "${tempZipPath}" del /f /q "${tempZipPath}"`,
+                `if exist "${path.join(projectRoot, exeName + '.old')}" del /f /q "${path.join(projectRoot, exeName + '.old')}" >nul 2>&1`,
                 'echo   [OK] Don dep xong.',
                 'echo.',
                 '',
@@ -123,7 +139,7 @@ async function checkForUpdates() {
                 'echo   CAP NHAT THANH CONG!',
                 'echo  ====================================================',
                 'echo.',
-                `echo   Vui khởi động lại file "${exeName}" để sử dụng phiên bản mới.`,
+                `echo   Vui long khoi dong lai file "${exeName}" de su dung phien ban moi.`,
                 'echo.',
                 'echo  ====================================================',
                 'echo.',
@@ -164,6 +180,10 @@ module.exports = {
     checkForUpdates,
     CURRENT_VERSION
 };
+
+
+
+
 
 
 

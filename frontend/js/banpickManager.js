@@ -24,6 +24,10 @@ let selectedHeroImage = "";
 
 /* ===================== HERO LIST (FULL) ===================== */
 const heroes = [
+  { name: "Tamyn", image: "images/heroes/Tamyn.jpg" },
+  { name: "FlowbornMid", image: "images/heroes/FlowbornPhapsu.jpg" },
+  { name: "FlowbornAD", image: "images/heroes/FlowbornXathu.jpg" },
+  { name: "Dyadia", image: "images/heroes/Dyadia.jpg" },
   { name: "Edras", image: "images/heroes/Edras.jpg" },
   { name: "Goverra", image: "images/heroes/Goverra.jpg" },
   { name: "Henio", image: "images/heroes/Henio.jpg" },
@@ -451,7 +455,7 @@ const handleSwapTeamInfo = async () => {
   // Note: We don't swap the current picks in the pick slots because they are positional
   // The pick slots (pickA1, pickA2, etc.) remain in their positions
   // What changes is the team association, not the slot positions
-  
+
   // Swap previous matches data in memory and for OBS views
   if (window.previousMatches && window.previousMatches.length > 0) {
     // Create swapped previous matches data
@@ -460,31 +464,31 @@ const handleSwapTeamInfo = async () => {
       picksB: match.picksA,
       hasData: match.hasData
     }));
-    
+
     // Update the window.previousMatches array with swapped data
     window.previousMatches = swappedPreviousMatches;
-    
+
     // Update the display in the manager view
     displayPreviousMatches();
-    
+
     // Send swapped previous picks data via socket
     try {
-      socket.send(JSON.stringify({ 
-        type: "previousPicks", 
+      socket.send(JSON.stringify({
+        type: "previousPicks",
         previousMatches: swappedPreviousMatches
       }));
     } catch (e) {
       // Silently ignore socket errors
     }
   }
-  
+
   // Save swapped team info to files (ignore if fails)
   try {
-    await API.post("/api/save-team-info", { 
-      teamAName: teamBName, 
-      teamBName: teamAName, 
-      scoreA: scoreB, 
-      scoreB: scoreA 
+    await API.post("/api/save-team-info", {
+      teamAName: teamBName,
+      teamBName: teamAName,
+      scoreA: scoreB,
+      scoreB: scoreA
     });
   } catch (err) {
     // Silently ignore file save errors
@@ -515,12 +519,12 @@ const handleSwapTeamInfo = async () => {
       const tempVotes = window.fandomWar.teamAVotes;
       window.fandomWar.teamAVotes = window.fandomWar.teamBVotes;
       window.fandomWar.teamBVotes = tempVotes;
-      
+
       // Swap keywords
       const tempKeyword = window.fandomWar.teamAKeyword;
       window.fandomWar.teamAKeyword = window.fandomWar.teamBKeyword;
       window.fandomWar.teamBKeyword = tempKeyword;
-      
+
       // Swap keyword input values
       if (window.fandomWar.teamAKeywordInput) {
         window.fandomWar.teamAKeywordInput.value = window.fandomWar.teamAKeyword;
@@ -528,19 +532,19 @@ const handleSwapTeamInfo = async () => {
       if (window.fandomWar.teamBKeywordInput) {
         window.fandomWar.teamBKeywordInput.value = window.fandomWar.teamBKeyword;
       }
-      
+
       // Swap Facebook keywords if exists
       if (window.fandomWar.teamAKeywordFbInput && window.fandomWar.teamBKeywordFbInput) {
         const tempFbKeyword = window.fandomWar.teamAKeywordFbInput.value.trim();
         window.fandomWar.teamAKeywordFbInput.value = window.fandomWar.teamBKeywordFbInput.value.trim();
         window.fandomWar.teamBKeywordFbInput.value = tempFbKeyword;
       }
-      
+
       // Swap gifts
       const tempGifts = [...window.fandomWar.teamAGifts];
       window.fandomWar.teamAGifts = [...window.fandomWar.teamBGifts];
       window.fandomWar.teamBGifts = tempGifts;
-      
+
       // Swap team assignment in comments array
       if (window.fandomWar.comments && Array.isArray(window.fandomWar.comments)) {
         window.fandomWar.comments.forEach(comment => {
@@ -555,43 +559,43 @@ const handleSwapTeamInfo = async () => {
           window.fandomWar.updateCommentsDisplay();
         }
       }
-      
+
       // Update gift checkboxes in dropdowns
       if (window.fandomWar.teamAGiftDropdown && window.fandomWar.teamBGiftDropdown) {
         const teamACheckboxes = window.fandomWar.teamAGiftDropdown.querySelectorAll('input[type="checkbox"]');
         const teamBCheckboxes = window.fandomWar.teamBGiftDropdown.querySelectorAll('input[type="checkbox"]');
-        
+
         // Save current checkbox states
         const teamAGiftStates = {};
         teamACheckboxes.forEach(cb => {
           teamAGiftStates[cb.value] = cb.checked;
         });
-        
+
         const teamBGiftStates = {};
         teamBCheckboxes.forEach(cb => {
           teamBGiftStates[cb.value] = cb.checked;
         });
-        
+
         // Swap checkbox states
         teamACheckboxes.forEach(cb => {
           cb.checked = teamBGiftStates[cb.value] || false;
         });
-        
+
         teamBCheckboxes.forEach(cb => {
           cb.checked = teamAGiftStates[cb.value] || false;
         });
-        
+
         // Update dropdown states (disable/enable logic)
         if (typeof window.fandomWar.updateGiftDropdownStates === "function") {
           window.fandomWar.updateGiftDropdownStates();
         }
       }
-      
+
       // Update votes display
       if (typeof window.fandomWar.updateVotesDisplay === "function") {
         window.fandomWar.updateVotesDisplay();
       }
-      
+
       // Save settings and broadcast config
       if (typeof window.fandomWar.saveSettings === "function") {
         window.fandomWar.saveSettings();
@@ -623,18 +627,18 @@ const handleNextMatch = () => {
   savePreviousMatch(match);
   resetCurrentMatch();
   displayPreviousMatches();
-  
+
   // Send all previous picks data via socket
-  socket.send(JSON.stringify({ 
-    type: "previousPicks", 
+  socket.send(JSON.stringify({
+    type: "previousPicks",
     previousMatches: window.previousMatches
   }));
-  
+
   // Send reset ban/pick message to OBS views
-  socket.send(JSON.stringify({ 
+  socket.send(JSON.stringify({
     type: "resetBanPick"
   }));
-  
+
   alert("Trận đã được lưu! Bắt đầu ván mới.");
 };
 
@@ -669,7 +673,7 @@ const savePreviousMatch = (matchData) => {
 const resetCurrentMatch = () => {
   // Disable swap functionality khi reset match
   disableSwapFunctionality();
-  
+
   // reset 10 pick slots
   for (let i = 1; i <= 5; i++) {
     ["A", "B"].forEach((team) => {
@@ -724,15 +728,15 @@ const displayPreviousMatches = () => {
         <div class="previous-team team-a">
           <div class="previous-picks-grid">
             ${match.picksA
-              .map((p) => `<div class="previous-pick" style="background-image: url(${p})"></div>`)
-              .join("")}
+        .map((p) => `<div class="previous-pick" style="background-image: url(${p})"></div>`)
+        .join("")}
           </div>
         </div>
         <div class="previous-team team-b">
           <div class="previous-picks-grid">
             ${match.picksB
-              .map((p) => `<div class="previous-pick" style="background-image: url(${p})"></div>`)
-              .join("")}
+        .map((p) => `<div class="previous-pick" style="background-image: url(${p})"></div>`)
+        .join("")}
           </div>
         </div>
       </div>
@@ -744,18 +748,18 @@ const displayPreviousMatches = () => {
 const handleResetPreviousMatches = () => {
   // Clear the previous matches array
   window.previousMatches = [];
-  
+
   // Reset the current match display
   resetCurrentMatch();
-  
+
   // Update the previous matches display
   displayPreviousMatches();
-  
+
   // Send reset message to OBS views
-  socket.send(JSON.stringify({ 
+  socket.send(JSON.stringify({
     type: "resetPreviousPicks"
   }));
-  
+
   alert("Đã reset toàn bộ dữ liệu previous picks!");
 };
 
@@ -776,7 +780,7 @@ const handleAutoFill = () => {
 
   // 10 pick + 8 ban
   const picks = take(10);
-  const bans  = take(8);
+  const bans = take(8);
 
   // Fill picks
   let p = 0;
@@ -856,7 +860,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // Get all objective buttons
   const objectiveButtons = document.querySelectorAll('.obj-button');
   objectiveButtons.forEach(button => {
-    button.addEventListener('click', function() {
+    button.addEventListener('click', function () {
       // Find parent section to determine team
       const section = button.closest('.section');
       let team = '';
@@ -894,7 +898,7 @@ let swapListenersAttached = false;
 
 function enableSwapFunctionality() {
   if (swapListenersAttached) return; // Đã attach rồi thì không attach lại
-  
+
   const slots = document.querySelectorAll(".slot");
   slots.forEach((slot) => {
     slot.addEventListener("click", handleSlotSelection);
@@ -904,7 +908,7 @@ function enableSwapFunctionality() {
 
 function disableSwapFunctionality() {
   if (!swapListenersAttached) return; // Chưa attach thì không cần remove
-  
+
   const slots = document.querySelectorAll(".slot");
   slots.forEach((slot) => {
     slot.removeEventListener("click", handleSlotSelection);
@@ -912,7 +916,7 @@ function disableSwapFunctionality() {
   swapListenersAttached = false;
   firstSelectedSlot = null;
   secondSelectedSlot = null;
-  
+
   // Xóa class selectedswap khỏi tất cả slot
   document.querySelectorAll(".slot.selectedswap").forEach((slot) => {
     slot.classList.remove("selectedswap");
@@ -925,13 +929,13 @@ function handleSlotSelection(event) {
   while (selectedSlot && !selectedSlot.classList.contains("slot")) {
     selectedSlot = selectedSlot.parentElement;
   }
-  
+
   if (!selectedSlot) return; // Không tìm thấy slot thì return
-  
+
   // CHỈ cho phép swap khi TẤT CẢ picks đều đã bị locked
   const allPickSlots = document.querySelectorAll(".slot[id^='pick']");
   const allPicksLocked = Array.from(allPickSlots).every(slot => slot.classList.contains("locked"));
-  
+
   // Nếu chưa lock hết picks thì KHÔNG cho swap
   if (!allPicksLocked) {
     return;

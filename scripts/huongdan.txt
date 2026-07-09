@@ -1,0 +1,29 @@
+💻 QUY TRÌNH CỦA LẬP TRÌNH VIÊN (DEV)
+🛠️ Bước 1: Sửa code tính năng
+Bạn chỉnh sửa bất kỳ thứ gì bạn muốn (sửa code backend trong backend/, sửa giao diện trong frontend/, hoặc thêm bớt theme trong themes/...).
+📦 Bước 2: Chạy kịch bản đóng gói tự động
+Nhấp đúp chuột chạy file: scripts\build-release.bat
+Giao diện dòng lệnh (CMD) sẽ hiện lên và yêu cầu bạn nhập:
+Số phiên bản mới (ví dụ: 1.0.1 — Lưu ý: Luôn tăng số này lên so với bản trước đó để hệ thống của khách hàng nhận diện được bản mới).
+Ghi chú cập nhật (ví dụ: Sua loi TikTok, Them theme RPL — các ý ngăn cách nhau bằng dấu phẩy).
+Nhấn Enter và đợi khoảng 15–30 giây. Chương trình sẽ tự động biên dịch lại file EXE mới, nén file ZIP pcastpro-latest.zip mới tinh, tự động sao lưu bản cũ 1.0.0 vào danh sách lịch sử (history) và ghi đè file version.json mới.
+Toàn bộ tệp cập nhật mới được tạo ra nằm gọn gàng tại thư mục: netlify-update-dist/ trên máy bạn.
+🚀 Bước 3: Đẩy bản cập nhật lên Netlify (Phát hành)
+Đăng nhập vào Netlify, chọn dự án của bạn (pcastpro.nguyentriphong.id.vn).
+Chuyển sang tab Deploys.
+Kéo thả nguyên thư mục netlify-update-dist/ trên máy tính của bạn vào ô kéo thả upload của Netlify.
+Ngay lập tức, bản cập nhật mới đã được phát hành toàn cầu!
+💾 Bước 4: Lưu trữ mã nguồn gốc lên GitHub (Để bạn sao lưu code)
+Mở terminal của bạn trong IDE (ví dụ VS Code) và chạy các lệnh quen thuộc để lưu code gốc:
+bash
+git add .
+git commit -m "Update: Them tinh nang ABC phien ban 1.0.1"
+git push origin main
+(Nhờ .gitignore đã cấu hình, thư mục code gốc backend/ chứa chất xám của bạn sẽ được đẩy lên GitHub Private an toàn, còn file EXE nặng 52MB và file ZIP cập nhật sẽ được bỏ qua không đẩy lên Git).
+👥 KỊCH BẢN PHÍA KHÁCH HÀNG (USER)
+Sau khi bạn hoàn thành Bước 3, ở lần tiếp theo khách hàng mở phần mềm của họ lên (bằng cách nhấp đúp file EXE hoặc chạy quick-start.bat):
+
+File EXE của họ tự động gọi đến pcastpro.nguyentriphong.id.vn/version.json và phát hiện có phiên bản 1.0.1 mới hơn phiên bản 1.0.0 hiện tại trên máy của họ.
+File EXE sẽ tự động tải file ZIP pcastpro-latest.zip từ Netlify của bạn về.
+Chạy lệnh ngầm PowerShell tự tắt tiến trình EXE cũ, giải nén đè toàn bộ tệp mới lên (nhưng giữ nguyên file .env cấu hình riêng của khách nếu có) và tự động khởi động lại phần mềm phiên bản mới.
+Khách hàng chỉ cần đúng 1 hành động duy nhất là mở phần mềm và họ sẽ luôn được trải nghiệm phiên bản mới nhất bạn phát hành mà không cần gõ lệnh hay tải thủ công!

@@ -1,10 +1,10 @@
-const axios = require('axios');
+﻿const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 const { projectRoot } = require('../config/pathHelper');
 
-const CURRENT_VERSION = '1.0.3';
+const CURRENT_VERSION = '1.1.1';
 const UPDATE_CONFIG_URL = 'https://pcastpro.nguyentriphong.id.vn/version.json';
 
 // Helper to compare version numbers
@@ -42,7 +42,7 @@ async function checkForUpdates() {
         return;
     }
 
-    console.log('Checking for updates from pcastpro.nguyentriphong.id.vn...');
+    console.log('Đang kiểm tra phiên bản mới...');
     try {
         const response = await axios.get(UPDATE_CONFIG_URL, { timeout: 8000 });
         const remoteData = response.data;
@@ -123,7 +123,7 @@ async function checkForUpdates() {
                 'echo   CAP NHAT THANH CONG!',
                 'echo  ====================================================',
                 'echo.',
-                `echo   Vui lòng khởi động lại file "${exeName}" để sử dụng phiên bản mới.`,
+                `echo   Vui khởi động lại file "${exeName}" để sử dụng phiên bản mới.`,
                 'echo.',
                 'echo  ====================================================',
                 'echo.',
@@ -164,6 +164,7 @@ module.exports = {
     checkForUpdates,
     CURRENT_VERSION
 };
+
 
 
 

@@ -4,8 +4,8 @@ const path = require('path');
 const { spawn } = require('child_process');
 const { projectRoot } = require('../config/pathHelper');
 
-const CURRENT_VERSION = '2.0.2';
-const UPDATE_CONFIG_URL = 'https://pcastpro.nguyentriphong.id.vn/version.json';
+const CURRENT_VERSION = '2.1.1';
+const UPDATE_CONFIG_URL = process.env.UPDATE_CONFIG_URL || 'https://pcastpro.nguyentriphong.id.vn/version.json';
 
 // Helper to compare version numbers
 function isNewerVersion(remote, local) {
@@ -46,10 +46,10 @@ async function checkForUpdates() {
         const oldExe = path.join(projectRoot, 'PCastPro.exe.old');
         if (fs.existsSync(oldExe)) {
             fs.unlinkSync(oldExe);
-            console.log('ÄÃ£ dá»n dáº¹p file cÅ© PCastPro.exe.old');
+            console.log('Ã„ÂÃƒÂ£ dÃ¡Â»Ân dÃ¡ÂºÂ¹p file cÃ…Â© PCastPro.exe.old');
         }
     } catch (e) {
-        console.error('KhÃ´ng thá»ƒ dá»n dáº¹p file cÅ© PCastPro.exe.old:', e.message);
+        console.error('KhÃƒÂ´ng thÃ¡Â»Æ’ dÃ¡Â»Ân dÃ¡ÂºÂ¹p file cÃ…Â© PCastPro.exe.old:', e.message);
     }
 
     console.log('dang kiem tra phien ban...');
@@ -180,6 +180,9 @@ module.exports = {
     checkForUpdates,
     CURRENT_VERSION
 };
+
+
+
 
 
 

@@ -72,6 +72,12 @@ const checkUserSession = async () => {
         if (data.user) {
             updateUserInfo(data.user);
             applyPermissions(data.user.permissions || [], data.user.role);
+            
+            // Auto load OBS store if user has permission
+            const hasObs = data.user.role === 'admin' || (data.user.permissions && data.user.permissions.includes('quanlyobs'));
+            if (hasObs && window.obsManagerAPI && typeof window.obsManagerAPI.loadStore === 'function') {
+                window.obsManagerAPI.loadStore();
+            }
         }
         return true;
     } catch (error) {

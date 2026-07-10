@@ -4,6 +4,7 @@ const cors = require('cors');
 const path = require('path');
 const http = require('http');
 const fs = require('fs');
+const { exec } = require('child_process');
 
 const { projectRoot } = require('./config/pathHelper');
 const { checkForUpdates } = require('./services/updateService');
@@ -77,6 +78,21 @@ async function startServer() {
         console.log(`   URL     : http://localhost:${HTTP_PORT}`);
         console.log('  ====================================');
         console.log('');
+
+        // Tự động mở trình duyệt nếu chạy từ file EXE
+        if (process.pkg) {
+            const url = `http://localhost:${HTTP_PORT}/index.html`;
+            const cmd = process.platform === 'win32'
+                ? `start "" "${url}"`
+                : process.platform === 'darwin'
+                    ? `open "${url}"`
+                    : `xdg-open "${url}"`;
+            exec(cmd, (err) => {
+                if (err) {
+                    console.error('Không thể tự động mở trình duyệt:', err.message);
+                }
+            });
+        }
     });
 }
 

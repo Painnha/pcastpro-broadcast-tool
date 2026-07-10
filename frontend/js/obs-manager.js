@@ -20,6 +20,8 @@ const obsManager = (function() {
         }
     };
 
+    let isStoreLoaded = false;
+
     // Cache danh sách source sau khi scan
     let CACHED_SCENES = [];
     let currentGroupName = '';
@@ -1241,6 +1243,10 @@ const obsManager = (function() {
     }
 
     async function saveStore() {
+        if (!isStoreLoaded) {
+            console.warn('Bỏ qua saveStore() vì cấu hình chưa được tải hoàn tất từ database.');
+            return;
+        }
         try {
             const result = await API.post('/api/obs/config', {
                 pinned: STORE.pinned || [],
@@ -1298,6 +1304,7 @@ const obsManager = (function() {
                     localStorage.setItem('obs_tool_store', JSON.stringify(STORE));
                     renderLinkGroups();
                     renderSwapPairs();
+                    isStoreLoaded = true;
                     return;
                 }
             }
@@ -1332,6 +1339,7 @@ const obsManager = (function() {
         }
         
         renderSwapPairs();
+        isStoreLoaded = true;
     }
 
     function stopCamera() {
@@ -2184,6 +2192,7 @@ const obsManager = (function() {
 
     // Expose API
     return {
+        loadStore,
         connectOBS,
         scanSources,
         togglePin,

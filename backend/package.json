@@ -1,6 +1,6 @@
 {
   "name": "ban-pick-backend",
-  "version": "2.1.1",
+  "version": "2.2.2",
   "description": "Backend server for Arena of Valor Ban/Pick system",
   "main": "server.js",
   "bin": "server.js",

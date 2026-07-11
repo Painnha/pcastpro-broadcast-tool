@@ -4,7 +4,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 const { projectRoot } = require('../config/pathHelper');
 
-const CURRENT_VERSION = '2.1.1';
+const CURRENT_VERSION = '2.2.2';
 const UPDATE_CONFIG_URL = process.env.UPDATE_CONFIG_URL || 'https://pcastpro.nguyentriphong.id.vn/version.json';
 
 // Helper to compare version numbers
@@ -180,6 +180,10 @@ module.exports = {
     checkForUpdates,
     CURRENT_VERSION
 };
+
+
+
+
 
 
 

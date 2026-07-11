@@ -1,0 +1,415 @@
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    background-color: black;
+}
+
+/* Định nghĩa kiểu chung */
+.slot {
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    border: 3px solid white;
+    background-color: black;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    transition: transform 0.2s ease;
+}
+
+.lane-logo {
+    width: 40px;
+    height: auto;
+    position: absolute;
+    z-index: 4;
+}
+
+.teamA .lane-logo {
+    top: 15px;
+    left: 5px;
+    filter: brightness(0) saturate(100%) invert(14%) sepia(93%) saturate(5412%) hue-rotate(245deg) brightness(81%) contrast(138%);
+}
+
+.teamB .lane-logo {
+    top: 15px;
+    right: 5px;
+    filter: brightness(0) saturate(100%) invert(20%) sepia(76%) saturate(6747%) hue-rotate(352deg) brightness(94%) contrast(105%);
+}
+
+.player-name {
+    font-family: '946Latin', sans-serif;
+    font-size: 24px;
+    color: #ffffff;
+    position: absolute;
+    top: 55px;
+    white-space: nowrap;
+    z-index: 4;
+    letter-spacing: 2px;
+}
+
+.teamA .player-name {
+    left: 32px;
+    /* Cố định vị trí neo từ mép trái chữ căn giữa với logo */
+    right: auto;
+    transform-origin: top left;
+    transform: rotate(90deg);
+}
+
+.teamB .player-name {
+    left: calc(100% - 1px);
+    /* Cố định vị trí neo từ mép chữ để nó ở giữa khoảng logo Team B */
+    right: auto;
+    transform-origin: top left;
+    transform: rotate(90deg);
+}
+
+/* --- STATE: Khi có tướng (has-hero) --- */
+.pick.has-hero .lane-logo {
+    display: none;
+    /* Ẩn logo lane */
+}
+
+.pick.has-hero .player-name {
+    top: 15px;
+    /* Đẩy tên sát lên trên thay vì 55px */
+}
+
+.pick.has-hero::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 3;
+    /* Lót dưới phần tên (4) và đè lên hình tướng (2) */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    pointer-events: none;
+}
+
+.teamA.pick.has-hero::after {
+    background-image: url('/images/Overlay/backgroundPlayerNameA.png');
+}
+
+.teamB.pick.has-hero::after {
+    background-image: url('/images/Overlay/backgroundPlayerNameB.png');
+}
+
+.ban {
+    width: 70px;
+    height: 70px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background-color: black;
+}
+
+.pick {
+    width: 143px;
+    height: 271px;
+    position: relative;
+    margin: -3px;
+    z-index: 2;
+    border: 1px solid transparent;
+}
+
+.pick-list {
+    display: flex;
+    gap: 0px;
+}
+
+.ban-list {
+    display: flex;
+    gap: 0px;
+    position: relative;
+}
+
+.active.ban {
+    position: relative;
+    overflow: hidden;
+    z-index: 2;
+}
+
+#banListA .ban::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to top, rgba(0, 14, 195, 1) 0%, rgba(0, 14, 195, 0) 50%);
+    z-index: 0;
+}
+
+#banListB .ban::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to top, rgba(230, 11, 7, 1) 0%, rgba(230, 11, 7, 0) 50%);
+    z-index: 0;
+}
+
+.active.ban::before {
+    animation: pulseBackgroundFade 2s ease-in-out infinite;
+}
+
+.active.pick {
+    position: relative;
+    overflow: hidden;
+    z-index: 2;
+}
+
+
+/* Removed picking text */
+
+@font-face {
+    font-family: 'SVNOMNY';
+    src: url('/font/SVNOMNYBLACK.OTF') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: '946Latin';
+    src: url('/font/946Latin-Wide4.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+.active.pick.locked::before,
+.active.pick.locked::after {
+    display: none;
+}
+
+.active.pick .player-name {
+    z-index: 4;
+}
+
+.active.pick .heroImage {
+    z-index: 2;
+}
+
+.heroheroImage {
+    position: absolute;
+}
+
+#countdown {
+    font-family: 'SVNOMNY';
+    /* Sử dụng font chữ tùy chỉnh */
+    font-size: 50px;
+    /* Kích thước font chữ */
+    color: #ffffff;
+    /* Màu chữ */
+    text-align: center;
+    bottom: 5px;
+    text-transform: uppercase;
+}
+
+@keyframes glow {
+    0% {
+        box-shadow: 0 0 10px yellow;
+    }
+
+    50% {
+        box-shadow: 0 0 20px orange;
+    }
+
+    100% {
+        box-shadow: 0 0 10px yellow;
+    }
+}
+
+@keyframes zoomInOut {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.2);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes borderGlow {
+    0% {
+        box-shadow: inset 0 0 5px yellow, inset 0 0 10px yellow, inset 0 0 15px yellow, inset 0 0 20px yellow;
+    }
+
+    25% {
+        box-shadow: inset 0 0 5px orange, inset 0 0 10px orange, inset 0 0 15px orange, inset 0 0 20px orange;
+    }
+
+    50% {
+        box-shadow: inset 0 0 5px red, inset 0 0 10px red, inset 0 0 15px red, inset 0 0 20px red;
+    }
+
+    75% {
+        box-shadow: inset 0 0 5px orange, inset 0 0 10px orange, inset 0 0 15px orange, inset 0 0 20px orange;
+    }
+
+    100% {
+        box-shadow: inset 0 0 5px yellow, inset 0 0 10px yellow, inset 0 0 15px yellow, inset 0 0 20px yellow;
+    }
+}
+
+@keyframes borderRun {
+    0% {
+        border-image-source: linear-gradient(to right,
+                transparent,
+                white,
+                transparent);
+        transform: translateX(-100%);
+    }
+
+    100% {
+        border-image-source: linear-gradient(to right,
+                transparent,
+                white,
+                transparent);
+        transform: translateX(100%);
+    }
+}
+
+.slot.ban {
+    position: relative;
+    /* Đảm bảo positioning context cho icon */
+}
+
+.slot.ban .heroImage {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    background-position: top center !important;
+    /* Hiển thị từ trên xuống */
+    background-size: 100% auto !important;
+    /* Giữ tỉ lệ ảnh, lấy chiều rộng làm chuẩn */
+}
+
+.slot.ban.grayscale .heroImage {
+    filter: grayscale(100%);
+}
+
+.ban-icon {
+    display: none;
+}
+
+.ban::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 3;
+    background-image: url('/images/Overlay/BanOverlay.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    pointer-events: none;
+}
+
+.heroImage {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+}
+
+/* Removed redundant 3D picking text styling */
+
+/* New pick background styles */
+.active-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 3;
+    display: none;
+}
+
+.pick-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    background-color: transparent;
+}
+
+.pick-background::before,
+.pick-background::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.pick-background::before {
+    z-index: 1;
+}
+
+.pick-background::after {
+    z-index: 2;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.teamA .pick-background::after {
+    display: block;
+    background-image: url('/images/Overlay/backgroundA.png');
+}
+
+.teamA .pick-background::before {
+    background: radial-gradient(ellipse 100px 250px at bottom left, rgba(0, 14, 195, 1) 0%, rgba(0, 14, 195, 0.4) 50%, rgba(0, 14, 195, 0) 100%);
+}
+
+.teamB .pick-background::after {
+    display: block;
+    background-image: url('/images/Overlay/backgroundB.png');
+}
+
+.teamB .pick-background::before {
+    background: radial-gradient(ellipse 100px 250px at bottom right, rgba(230, 11, 7, 1) 0%, rgba(230, 11, 7, 0.4) 50%, rgba(230, 11, 7, 0) 100%);
+}
+
+@keyframes pulseBackgroundFade {
+    0% {
+        opacity: 0.1;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0.1;
+    }
+}
+
+.active.pick .pick-background::before {
+    animation: pulseBackgroundFade 2s ease-in-out infinite;
+}
+
+/* Đảm bảo ảnh tướng trong ban list hiển thị đúng */
+#banListA .slot.ban .heroImage,
+#banListB .slot.ban .heroImage {
+    background-position: top center !important;
+}

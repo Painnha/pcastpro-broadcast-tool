@@ -9,8 +9,12 @@ echo  PCastPro - Kich ban tu dong dong goi va phat hanh
 echo ===================================================
 echo.
 
+:: Doc phien ban hien tai tu updateService.js
+for /f "tokens=2 delims='" %%a in ('findstr /C:"const CURRENT_VERSION" "%~dp0..\backend\services\updateService.js"') do set "CURRENT_VER=%%a"
+if "%CURRENT_VER%"=="" set "CURRENT_VER=unknown"
+
 :: Nhap so phien ban moi
-set /p NEW_VERSION="Nhap so phien ban moi (vi du: 1.0.1): "
+set /p NEW_VERSION="Phien ban hien tai: %CURRENT_VER% - Nhap phien ban moi: "
 if "%NEW_VERSION%"=="" (
     echo [X] LOI: Khong duoc de trong phien ban!
     pause

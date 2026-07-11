@@ -57,6 +57,15 @@ const initThemes = async (req, res) => {
             await apl2025Theme.save();
         }
         
+        const blvChanhDtdv2026Exists = await Theme.findOne({ themeID: 'blvChanh_dtdv2026' });
+        if (!blvChanhDtdv2026Exists) {
+            const blvChanhDtdv2026Theme = new Theme({
+                themeID: 'blvChanh_dtdv2026',
+                path: 'themes/blvChanh_dtdv2026'
+            });
+            await blvChanhDtdv2026Theme.save();
+        }
+        
         res.send({ message: 'Themes initialized successfully' });
     } catch (error) {
         console.error('Error initializing themes:', error);

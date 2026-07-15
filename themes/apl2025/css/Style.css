@@ -257,6 +257,19 @@ body {
     z-index: 5;
 }
 
+/* Hero Motion Video - hiển thị video tướng động trên pick slot */
+.heroVideo {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;      /* Fill đầy slot, cắt phần thừa → không khoảng trống */
+    object-position: top;   /* Ưu tiên hiển thị phần trên (đầu/mặt tướng) */
+    z-index: 5;             /* Cùng z-index với .heroImage */
+    pointer-events: none;
+}
+
 /* Team Status Styles */
 .team-status {
     position: absolute;

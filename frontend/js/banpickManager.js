@@ -132,7 +132,7 @@ const heroes = [
   { name: "Teeri", image: "images/heroes/Teeri.jpg" },
   { name: "Tel'annas", image: "images/heroes/Telannas.jpg" },
   { name: "Thane", image: "images/heroes/Thane.jpg" },
-  { name: "Thorne", image: "images/heroes/Thorn.jpg" },
+  { name: "Thorne", image: "images/heroes/Thorne.jpg" },
   { name: "Toro", image: "images/heroes/Toro.jpg" },
   { name: "Triệu Vân", image: "images/heroes/TrieuVan.jpg" },
   { name: "Tulen", image: "images/heroes/Tulen.jpg" },

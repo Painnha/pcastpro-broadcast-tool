@@ -18,6 +18,102 @@ const CURRENT_THEME = getCurrentTheme();
 const THEME_PATH = `/themes/${CURRENT_THEME}`;
 
 
+/* ===================== HERO MOTION VIDEO SUPPORT ===================== */
+const heroMotionCache = {}; // Cache kết quả kiểm tra video: { heroName: videoPath | null }
+const VIDEO_EXTENSIONS = ['.mp4', '.mov', '.webm'];
+
+// Trích tên tướng từ image path: "images/heroes/Bijan.jpg" → "Bijan"
+function getHeroNameFromImage(imagePath) {
+    if (!imagePath) return null;
+    // Xử lý cả dạng url(...) và path thường
+    const cleaned = imagePath.replace(/^url\(["']?|["']?\)$/g, '').replace(/^\//, '');
+    const filename = cleaned.split('/').pop();
+    return filename ? filename.replace(/\.[^.]+$/, '') : null;
+}
+
+// Kiểm tra video tướng có tồn tại không (cache kết quả, chỉ fetch HEAD 1 lần mỗi tướng)
+async function findHeroMotionVideo(heroName) {
+    if (!heroName) return null;
+    if (heroMotionCache[heroName] !== undefined) return heroMotionCache[heroName];
+
+    for (const ext of VIDEO_EXTENSIONS) {
+        const videoPath = `/images/heroMotion/${heroName}${ext}`;
+        try {
+            const resp = await fetch(videoPath, { method: 'HEAD' });
+            if (resp.ok) {
+                heroMotionCache[heroName] = videoPath;
+                return videoPath;
+            }
+        } catch (e) { /* ignore network errors */ }
+    }
+    heroMotionCache[heroName] = null;
+    return null;
+}
+
+// Tạo hoặc cập nhật video element trong slot
+function setHeroVideo(slot, videoPath) {
+    let video = slot.querySelector('.heroVideo');
+    if (!video) {
+        video = document.createElement('video');
+        video.className = 'heroVideo';
+        video.muted = true;
+        video.loop = true;
+        video.playsInline = true;
+        video.autoplay = true;
+        video.preload = 'auto';
+        // Insert vào slot (trước heroImage để cùng layer)
+        const heroImageDiv = slot.querySelector('.heroImage');
+        if (heroImageDiv) {
+            slot.insertBefore(video, heroImageDiv);
+        } else {
+            slot.appendChild(video);
+        }
+    }
+
+    // Chỉ thay đổi src nếu khác → tránh reset video đang chạy
+    if (video.getAttribute('src') !== videoPath) {
+        video.src = videoPath;
+        video.load();
+        video.play().catch(() => {});
+    }
+
+    // Ẩn static heroImage khi có video
+    const heroImageDiv = slot.querySelector('.heroImage');
+    if (heroImageDiv) heroImageDiv.style.display = 'none';
+
+    return video;
+}
+
+// Xóa video element khỏi slot và hiện lại heroImage
+function removeHeroVideo(slot) {
+    const video = slot.querySelector('.heroVideo');
+    if (video) {
+        video.pause();
+        video.removeAttribute('src');
+        video.load(); // Giải phóng tài nguyên
+        video.remove();
+    }
+    // Hiện lại static heroImage
+    const heroImageDiv = slot.querySelector('.heroImage');
+    if (heroImageDiv) heroImageDiv.style.display = '';
+}
+
+// Async: Kiểm tra và hiển thị video cho 1 slot (gọi sau khi set ảnh tĩnh)
+async function tryShowHeroVideo(slot, imagePath) {
+    const heroName = getHeroNameFromImage(imagePath);
+    if (!heroName) return;
+
+    const videoPath = await findHeroMotionVideo(heroName);
+    if (videoPath) {
+        setHeroVideo(slot, videoPath);
+    } else {
+        // Không có video → đảm bảo xóa video cũ nếu có
+        removeHeroVideo(slot);
+    }
+}
+/* ===================== END HERO MOTION ===================== */
+
+
 socket.onopen = () => {
     socket.send(JSON.stringify({ type: 'connected', message: 'Observer connected' }));
 };
@@ -140,12 +236,17 @@ function updateSlot(data) {
 
     const heroImageDiv = slot.querySelector('.heroImage');
     if (heroImageDiv) {
-    heroImageDiv.style.position = 'absolute'
+        heroImageDiv.style.position = 'absolute';
         heroImageDiv.style.backgroundImage = `url(/${data.image})`;
         heroImageDiv.style.backgroundSize = 'cover';
         heroImageDiv.style.backgroundPosition = 'center';
         heroImageDiv.style.width = '100%';
         heroImageDiv.style.height = '100%';
+    }
+
+    // Hero Motion Video: kiểm tra và hiển thị video nếu có (chỉ cho pick slot)
+    if (data.image && data.image.trim() !== '' && slot.classList.contains('pick')) {
+        tryShowHeroVideo(slot, data.image);
     }
 
     if (data.type === 'banActive') {
@@ -167,6 +268,11 @@ function updateSlot(data) {
             if (slot.classList.contains('ban')) {
                 heroImageDiv.style.filter = 'grayscale(100%)';
             }
+        }
+        // Lock animation cho video nếu có
+        const heroVideo = slot.querySelector('.heroVideo');
+        if (heroVideo && slot.classList.contains('pick')) {
+            heroVideo.style.animation = 'zoomInOut 1s forwards';
         }
         slot.classList.remove('active');
         const activeIndicator = slot.querySelector('.active-indicator');
@@ -306,6 +412,13 @@ function updateSwapImage(slotId, newImage) {
         // For manager view (index.html) where slot itself has the background image
         slot.style.backgroundImage = newImage ? `url(${newImage})` : '';
     }
+
+    // Hero Motion Video: cập nhật video khi swap (chỉ cho pick slot)
+    if (newImage && slot.classList.contains('pick')) {
+        tryShowHeroVideo(slot, newImage);
+    } else {
+        removeHeroVideo(slot);
+    }
 }
 
 
@@ -345,6 +458,8 @@ function resetBanPickSlots() {
         ['A', 'B'].forEach(team => {
             const slot = document.getElementById(`pick${team}${i}`);
             if (slot) {
+                // Clear hero video (nếu có)
+                removeHeroVideo(slot);
                 // Clear hero image
                 const heroImageDiv = slot.querySelector('.heroImage');
                 if (heroImageDiv) {
@@ -355,6 +470,7 @@ function resetBanPickSlots() {
                 }
                 // Remove classes
                 slot.classList.remove('active', 'locked');
+                slot.style.filter = '';
                 // Show lane logo if exists
                 const laneLogo = slot.querySelector('.lane-logo');
                 if (laneLogo) laneLogo.style.display = 'block';

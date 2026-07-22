@@ -311,7 +311,7 @@ const assignPermissions = async (req, res) => {
         return res.status(400).send({ message: 'Email và danh sách permissions (mảng) là bắt buộc' });
     }
     
-    const validPermissions = ['basic', 'fandomwar', 'quanlyobs'];
+    const validPermissions = ['basic', 'fandomwar', 'quanlyobs', 'motionhero'];
     const invalidPermissions = permissions.filter(p => !validPermissions.includes(p));
     if (invalidPermissions.length > 0) {
         return res.status(400).send({ message: `Quyền không hợp lệ: ${invalidPermissions.join(', ')}` });

@@ -1,8 +1,18 @@
 const mongoose = require('mongoose');
+const dns = require('dns');
 
 const connectDB = async () => {
     try {
         const dbURI = process.env.MONGODB_URI || 'mongodb+srv://PCasthub:Phong113%40@cluster0.5gzj7am.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+        
+        if (dbURI.startsWith('mongodb+srv://')) {
+            try {
+                dns.setServers(['8.8.8.8', '1.1.1.1']);
+            } catch (dnsErr) {
+                console.warn('Warning: Could not set custom DNS servers:', dnsErr.message);
+            }
+        }
+
         const conn = await mongoose.connect(dbURI);
         console.log(`Connected to MongoDB: ${conn.connection.host}`);
         

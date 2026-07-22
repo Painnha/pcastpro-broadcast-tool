@@ -1,29 +1,190 @@
-💻 QUY TRÌNH CỦA LẬP TRÌNH VIÊN (DEV)
-🛠️ Bước 1: Sửa code tính năng
-Bạn chỉnh sửa bất kỳ thứ gì bạn muốn (sửa code backend trong backend/, sửa giao diện trong frontend/, hoặc thêm bớt theme trong themes/...).
-📦 Bước 2: Chạy kịch bản đóng gói tự động
-Nhấp đúp chuột chạy file: scripts\build-release.bat
-Giao diện dòng lệnh (CMD) sẽ hiện lên và yêu cầu bạn nhập:
-Số phiên bản mới (ví dụ: 1.0.1 — Lưu ý: Luôn tăng số này lên so với bản trước đó để hệ thống của khách hàng nhận diện được bản mới).
-Ghi chú cập nhật (ví dụ: Sua loi TikTok, Them theme RPL — các ý ngăn cách nhau bằng dấu phẩy).
-Nhấn Enter và đợi khoảng 15–30 giây. Chương trình sẽ tự động biên dịch lại file EXE mới, nén file ZIP pcastpro-latest.zip mới tinh, tự động sao lưu bản cũ 1.0.0 vào danh sách lịch sử (history) và ghi đè file version.json mới.
-Toàn bộ tệp cập nhật mới được tạo ra nằm gọn gàng tại thư mục: netlify-update-dist/ trên máy bạn.
-🚀 Bước 3: Đẩy bản cập nhật lên Netlify (Phát hành)
-Đăng nhập vào Netlify, chọn dự án của bạn (pcastpro.nguyentriphong.id.vn).
-Chuyển sang tab Deploys.
-Kéo thả nguyên thư mục netlify-update-dist/ trên máy tính của bạn vào ô kéo thả upload của Netlify.
-Ngay lập tức, bản cập nhật mới đã được phát hành toàn cầu!
-💾 Bước 4: Lưu trữ mã nguồn gốc lên GitHub (Để bạn sao lưu code)
-Mở terminal của bạn trong IDE (ví dụ VS Code) và chạy các lệnh quen thuộc để lưu code gốc:
-bash
-git add .
-git commit -m "Update: Them tinh nang ABC phien ban 1.0.1"
-git push origin main
-(Nhờ .gitignore đã cấu hình, thư mục code gốc backend/ chứa chất xám của bạn sẽ được đẩy lên GitHub Private an toàn, còn file EXE nặng 52MB và file ZIP cập nhật sẽ được bỏ qua không đẩy lên Git).
-👥 KỊCH BẢN PHÍA KHÁCH HÀNG (USER)
-Sau khi bạn hoàn thành Bước 3, ở lần tiếp theo khách hàng mở phần mềm của họ lên (bằng cách nhấp đúp file EXE hoặc chạy quick-start.bat):
+╔══════════════════════════════════════════════════════════════╗
+║  QUY TRÌNH PHÁT HÀNH PCASTPRO - UNIFIED DELTA UPDATER      ║
+║  Cập nhật: 22/07/2026 | Hosting: Vercel + GitHub Releases   ║
+╚══════════════════════════════════════════════════════════════╝
 
-File EXE của họ tự động gọi đến pcastpro.nguyentriphong.id.vn/version.json và phát hiện có phiên bản 1.0.1 mới hơn phiên bản 1.0.0 hiện tại trên máy của họ.
-File EXE sẽ tự động tải file ZIP pcastpro-latest.zip từ Netlify của bạn về.
-Chạy lệnh ngầm PowerShell tự tắt tiến trình EXE cũ, giải nén đè toàn bộ tệp mới lên (nhưng giữ nguyên file .env cấu hình riêng của khách nếu có) và tự động khởi động lại phần mềm phiên bản mới.
-Khách hàng chỉ cần đúng 1 hành động duy nhất là mở phần mềm và họ sẽ luôn được trải nghiệm phiên bản mới nhất bạn phát hành mà không cần gõ lệnh hay tải thủ công!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ KIẾN TRÚC CẬP NHẬT (CẦN NẮM TRƯỚC KHI ĐỌC)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Hệ thống PCastPro có 2 kênh cập nhật TÁCH BIỆT:
+
+  ┌─────────────────────────────────────────────────────────┐
+  │ KÊNH 1: CẬP NHẬT CORE (Code, EXE, Theme, Frontend)     │
+  │   File kiểm tra : version.json (trên Vercel)            │
+  │   Tải về        : pcastpro-latest.zip (trên GitHub)     │
+  │   Dung lượng    : ~15-30MB (KHÔNG chứa video hero)      │
+  │   Cơ chế        : Tải ZIP → .bat → Tắt app → Giải nén  │
+  ├─────────────────────────────────────────────────────────┤
+  │ KÊNH 2: CẬP NHẬT VIDEO HERO (131 file .dat, ~780MB)    │
+  │   File kiểm tra : manifest.json (trên Vercel)           │
+  │   Tải về        : Từng file .dat riêng lẻ (GitHub)      │
+  │   Cơ chế        : Hash scan → Tải ngầm → Atomic rename  │
+  │   Tự sửa lỗi   : File thiếu/lỗi được tải lại tự động  │
+  └─────────────────────────────────────────────────────────┘
+
+  Khi khởi động, app sẽ kiểm tra KÊNH 1 TRƯỚC:
+    → Nếu có bản Core mới → Tải ZIP → Tắt app → DỪNG (không check video)
+    → Nếu Core đã mới nhất → Mới check KÊNH 2 (video hero) ngầm
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CÁC FILE VÀ THƯ MỤC QUAN TRỌNG
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  File/Thư mục                           Mục đích
+  ─────────────────────────────────────  ─────────────────────────────
+  scripts/build-release.bat              Script đóng gói EXE + ZIP
+  scripts/generate-manifest.js           Sinh manifest.json (hash video)
+  scripts/test-update-system.js          Bộ test offline trước khi deploy
+  netlify-update-dist/version.json       File version phát hành (Vercel)
+  netlify-update-dist/pcastpro-latest.zip ZIP core (GitHub Releases)
+  manifest.json (project root)           Manifest video hero (Vercel)
+  backend/services/updateService.js      Logic cập nhật (Core + Video)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                    KỊCH BẢN A: CẬP NHẬT CODE / THEME / FRONTEND
+                    (Không liên quan tới video hero)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💻 BƯỚC 1: Sửa code
+  Sửa bất kỳ thứ gì: backend/, frontend/, themes/...
+
+📦 BƯỚC 2: Chạy build-release.bat
+  Nhấp đúp file: scripts\build-release.bat
+  Nhập:
+    - Số phiên bản mới (ví dụ: 2.3.0 — PHẢI lớn hơn bản trước)
+    - Ghi chú cập nhật (ví dụ: Fix bug TikTok, Them theme moi)
+    - Chọn kênh: [1] Staging/Beta hoặc [2] Production
+  Đợi 15-30 giây → Script tự động:
+    ✓ Biên dịch PCastPro.exe mới
+    ✓ Sao lưu bản cũ vào release-archive/
+    ✓ Nén ZIP mới (TỰ ĐỘNG loại trừ thư mục heroMotion ~780MB)
+    ✓ Cập nhật version.json với số phiên bản mới
+
+🧪 BƯỚC 3: TEST trước khi deploy
+  Chạy lệnh:
+    node scripts/test-update-system.js
+  Đảm bảo: "ALL TESTS PASSED" trước khi tiếp tục!
+
+🚀 BƯỚC 4: Upload ZIP lên GitHub Releases
+  1. Truy cập: https://github.com/Painnha/pcastpro-update-cdn/releases
+  2. Tạo Release mới với Tag: v2.3.0
+  3. Kéo thả file: netlify-update-dist/pcastpro-latest.zip vào Assets
+  4. Publish Release
+  (Script build-release.bat sẽ nhắc bạn bước này)
+
+🌐 BƯỚC 5: Đẩy version.json lên Vercel
+  Script build-release.bat đã tự git push vào netlify-update-dist/.
+  Nếu bạn dùng Vercel deploy từ Git, nó sẽ tự cập nhật.
+
+  HOẶC nếu bạn deploy thủ công bằng Vercel CLI:
+    cd netlify-update-dist
+    vercel --prod
+
+  HOẶC kéo thả thư mục netlify-update-dist/ lên Vercel Dashboard.
+
+💾 BƯỚC 6: Lưu code lên GitHub
+    git add .
+    git commit -m "v2.3.0: Fix bug TikTok, Them theme moi"
+    git push origin main
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                    KỊCH BẢN B: CẬP NHẬT / THÊM MỚI VIDEO HERO
+                    (Thêm tướng mới hoặc sửa video tướng cũ)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎬 BƯỚC 1: Chuẩn bị file video
+  Đặt file .mp4 mới vào: frontend/images/heroMotion/
+  (Ví dụ: TuongMoi.mp4)
+
+🔒 BƯỚC 2: Mã hóa video
+  Chạy lệnh:
+    node scripts/encryptHeroMotion.js
+  → Sinh ra file .dat trong: frontend/images/heroMotion/encrypted/
+
+📋 BƯỚC 3: Sinh lại manifest.json
+  Chạy lệnh:
+    node scripts/generate-manifest.js 2.3.0
+  (Thay 2.3.0 bằng phiên bản hiện tại)
+  → File manifest.json ở project root được cập nhật với hash mới
+
+🧪 BƯỚC 4: TEST
+    node scripts/test-update-system.js
+  Đảm bảo: "ALL TESTS PASSED"
+
+🚀 BƯỚC 5: Upload file .dat mới lên GitHub Releases
+  1. Truy cập GitHub Releases của bạn
+  2. Upload file .dat mới (chỉ file mới/thay đổi) vào Assets
+  3. Đảm bảo URL khớp với assetsBaseUrl trong manifest.json
+
+🌐 BƯỚC 6: Đẩy manifest.json lên Vercel
+  Copy file manifest.json vào thư mục netlify-update-dist/
+  Rồi deploy lên Vercel (giống Bước 5 ở Kịch Bản A)
+
+  LƯU Ý: Nếu bạn CẢ thay đổi code LẪN thêm video cùng lúc,
+  hãy làm CẢ HAI Kịch Bản A + B trước khi deploy.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                    KỊCH BẢN PHÍA KHÁCH HÀNG (USER)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Khách hàng CHỈ CẦN mở phần mềm (nhấp đúp PCastPro.exe).
+Mọi thứ còn lại là TỰ ĐỘNG:
+
+  ┌─── Khởi động ───────────────────────────────────────────┐
+  │                                                         │
+  │  1. App gọi tới version.json trên Vercel                │
+  │     → Nếu có phiên bản Core mới:                       │
+  │       ✓ Tải ZIP từ GitHub Releases                      │
+  │       ✓ Mở cửa sổ CMD hiển thị tiến trình              │
+  │       ✓ Tự tắt EXE cũ, giải nén, bật lại EXE mới      │
+  │       ✓ Giữ nguyên file .env của khách                  │
+  │       ✓ DỪNG — không check video (tránh xung đột)       │
+  │                                                         │
+  │  2. Nếu Core đã mới nhất → Check manifest.json          │
+  │     → Quét 131 file video .dat trên máy khách           │
+  │     → So sánh mã hash SHA-256 với manifest              │
+  │     → File thiếu hoặc lỗi → Tải ngầm & sửa tự động    │
+  │     → Hiển thị thanh tiến trình trên giao diện UI       │
+  │                                                         │
+  │  3. Giao diện quản lý sẵn sàng sử dụng!                │
+  │                                                         │
+  └─────────────────────────────────────────────────────────┘
+
+  Khách hàng không cần biết gì về video hero.
+  Hệ thống tự phát hiện file thiếu/lỗi và sửa ngầm.
+  Nếu mất mạng → App vẫn chạy bình thường với dữ liệu hiện có.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                    CHECKLIST NHANH TRƯỚC KHI DEPLOY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  [ ] Chạy: node scripts/test-update-system.js → ALL PASSED?
+  [ ] Số phiên bản trong updateService.js đã tăng?
+  [ ] File pcastpro-latest.zip đã upload lên GitHub Releases?
+  [ ] File version.json (và manifest.json nếu có video mới) đã deploy Vercel?
+  [ ] Đã git push code lên GitHub Private?
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                    XỬ LÝ SỰ CỐ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Sự cố                               Cách xử lý
+  ─────────────────────────────────── ──────────────────────────────────
+  Khách báo "không update được"       Kiểm tra version.json trên Vercel
+                                      có đúng phiên bản mới chưa. Check
+                                      link downloadUrl trong version.json
+                                      có trỏ đúng tới GitHub Release không.
+
+  Video hero không hiển thị           Kiểm tra manifest.json trên Vercel.
+                                      Đảm bảo assetsBaseUrl trỏ đúng tới
+                                      GitHub Release chứa file .dat.
+
+  Muốn rollback phiên bản cũ         Vào release-archive/ trên máy Dev,
+                                      lấy file ZIP phiên bản cũ, upload
+                                      lại lên GitHub Releases, sửa
+                                      version.json trỏ về phiên bản cũ.
+
+  Khách bị hỏng file .dat            Không cần làm gì! Hệ thống tự phát
+                                      hiện hash sai và tải lại file đó
+                                      vào lần khởi động tiếp theo.

@@ -299,7 +299,10 @@ function lockSlot() {
 document.getElementById("lockButton").onclick = lockSlot;
 
 function sendSlotUpdate(slotId, image, type, countdown) {
-  socket.send(JSON.stringify({ slotId, image, type, countdown }));
+  // Extract hero name from image path for MotionHero (e.g. "images/heroes/Airi.jpg" → "Airi")
+  const heroIdMatch = image ? image.match(/heroes\/([^.\/]+)\./) : null;
+  const heroId = heroIdMatch ? heroIdMatch[1] : null;
+  socket.send(JSON.stringify({ slotId, image, type, countdown, heroId }));
 }
 
 /* ===================== CLICK SELECT SLOT ===================== */

@@ -4,22 +4,26 @@ const Session = require('../models/Session');
 const tiktokLiveService = require('../services/tiktokLiveService');
 const facebookLiveService = require('../services/facebookLiveService');
 
+let wssInstance = null;
+
 // Store WebSocket connections by deviceId for real-time logout
 const deviceConnections = new Map();
 
+// Helper to broadcast to all connected clients
+const broadcast = (messageObject) => {
+    if (!wssInstance) return;
+    const messageStr = typeof messageObject === 'string' ? messageObject : JSON.stringify(messageObject);
+    wssInstance.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(messageStr);
+        }
+    });
+};
+
 const initSockets = (server) => {
     const wss = new WebSocket.Server({ server });
+    wssInstance = wss;
     const JWT_SECRET = process.env.JWT_SECRET;
-
-    // Helper to broadcast to all connected clients
-    const broadcast = (messageObject) => {
-        const messageStr = JSON.stringify(messageObject);
-        wss.clients.forEach(client => {
-            if (client.readyState === WebSocket.OPEN) {
-                client.send(messageStr);
-            }
-        });
-    };
 
     // --- TikTok Service Broadcasts ---
     tiktokLiveService.onComment((comment) => {
@@ -153,9 +157,27 @@ const initSockets = (server) => {
             }
 
             // Broadcast message to all connected clients
+            // Inject motionHero permission flag for ban/pick messages
+            let broadcastMessage = message;
+            try {
+                const msgObj = JSON.parse(message);
+                if (msgObj.type === 'lock' || msgObj.type === 'select' || msgObj.type === 'banActive') {
+                    const User = require('../models/User');
+                    const activeUser = await User.findOne({ isActive: true }).sort({ lastActivity: -1 });
+                    const hasPermission = activeUser && (
+                        activeUser.role === 'admin' ||
+                        (activeUser.permissions && activeUser.permissions.includes('motionhero'))
+                    );
+                    msgObj.motionHeroEnabled = !!(hasPermission && activeUser.motionHeroEnabled !== false);
+                    broadcastMessage = JSON.stringify(msgObj);
+                }
+            } catch (e) {
+                // Non-JSON or parse error — broadcast as-is
+            }
+
             wss.clients.forEach(client => {
                 if (client.readyState === WebSocket.OPEN) {
-                    client.send(message);
+                    client.send(broadcastMessage);
                 }
             });
         });
@@ -178,4 +200,4 @@ const initSockets = (server) => {
     return { wss, deviceConnections };
 };
 
-module.exports = { initSockets, deviceConnections };
+module.exports = { initSockets, deviceConnections, broadcast };

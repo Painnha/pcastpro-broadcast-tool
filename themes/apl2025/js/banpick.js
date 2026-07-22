@@ -1,3 +1,137 @@
+
+
+/* ===================== MOTION HERO MODULE ===================== */
+const MotionHero = (() => {
+    const _blobCache = new Map();
+    let _sessionKey = null;
+    let _isEnabled = false;
+    let _initialized = false;
+    let _keyFetchPromise = null;
+
+    function hexToBytes(hex) {
+        const bytes = new Uint8Array(hex.length / 2);
+        for (let i = 0; i < hex.length; i += 2) {
+            bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+        }
+        return bytes;
+    }
+
+    async function init(enabled) {
+        if (_initialized) return;
+        _isEnabled = enabled;
+        _initialized = true;
+        if (enabled) await _fetchSessionKey();
+    }
+
+    async function _fetchSessionKey() {
+        if (_keyFetchPromise) return _keyFetchPromise;
+        _keyFetchPromise = (async () => {
+            try {
+                const token = localStorage.getItem('authToken') || '';
+                const res = await fetch('/api/motion-hero/session-key', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    _sessionKey = data.key;
+                } else {
+                    _isEnabled = false;
+                }
+            } catch (e) {
+                _isEnabled = false;
+            } finally {
+                _keyFetchPromise = null;
+            }
+        })();
+        return _keyFetchPromise;
+    }
+
+    async function loadHeroVideo(heroName) {
+        if (!_isEnabled || !heroName) return null;
+        if (!_sessionKey) { await _fetchSessionKey(); if (!_sessionKey) return null; }
+        if (_blobCache.has(heroName)) return _blobCache.get(heroName).blobUrl;
+
+        try {
+            const token = localStorage.getItem('authToken') || '';
+            const res = await fetch(`/api/motion-hero/stream/${encodeURIComponent(heroName)}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) return null;
+
+            const encryptedData = await res.arrayBuffer();
+            if (encryptedData.byteLength < 29) return null;
+
+            const iv = new Uint8Array(encryptedData, 0, 12);
+            const authTag = new Uint8Array(encryptedData, 12, 16);
+            const ciphertext = new Uint8Array(encryptedData, 28);
+            const combined = new Uint8Array(ciphertext.length + authTag.length);
+            combined.set(ciphertext, 0);
+            combined.set(authTag, ciphertext.length);
+
+            const keyBytes = hexToBytes(_sessionKey);
+            const cryptoKey = await crypto.subtle.importKey('raw', keyBytes, { name: 'AES-GCM' }, false, ['decrypt']);
+            const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv, tagLength: 128 }, cryptoKey, combined.buffer);
+
+            const blob = new Blob([decrypted], { type: 'video/mp4' });
+            const blobUrl = URL.createObjectURL(blob);
+            _blobCache.set(heroName, { blobUrl });
+            return blobUrl;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function cleanUnusedBlobs(activeHeroNames) {
+        const activeSet = new Set(activeHeroNames.filter(Boolean));
+        for (const [heroName, entry] of _blobCache.entries()) {
+            if (!activeSet.has(heroName)) {
+                try { URL.revokeObjectURL(entry.blobUrl); } catch (e) { /* ignore */ }
+                _blobCache.delete(heroName);
+            }
+        }
+    }
+
+    function clearMemory() {
+        _blobCache.forEach((entry) => {
+            try { URL.revokeObjectURL(entry.blobUrl); } catch (e) { /* ignore */ }
+        });
+        _blobCache.clear();
+        _sessionKey = null;
+        _initialized = false;
+    }
+
+    function extractHeroName(data) {
+        if (data.heroId) return data.heroId;
+        if (data.image) {
+            const match = data.image.match(/heroes\/([^.\/]+)\./);
+            return match ? match[1] : null;
+        }
+        return null;
+    }
+
+    return {
+        init,
+        loadHeroVideo,
+        clearMemory,
+        cleanUnusedBlobs,
+        extractHeroName,
+        get isEnabled() { return _isEnabled; },
+        get initialized() { return _initialized; }
+    };
+})();
+
+function cleanUnusedHeroVideos() {
+    const activeHeroes = [];
+    document.querySelectorAll('.slot').forEach(slot => {
+        const heroImg = slot.querySelector('.heroImage');
+        if (heroImg && heroImg.dataset.activeHero) {
+            activeHeroes.push(heroImg.dataset.activeHero);
+        }
+    });
+    MotionHero.cleanUnusedBlobs(activeHeroes);
+}
+/* ===================== END MOTION HERO MODULE ===================== */
+
 resetPreviousPicksDisplay();
 
 const socket = new WebSocket('ws://localhost:3000/ws');
@@ -18,100 +152,7 @@ const CURRENT_THEME = getCurrentTheme();
 const THEME_PATH = `/themes/${CURRENT_THEME}`;
 
 
-/* ===================== HERO MOTION VIDEO SUPPORT ===================== */
-const heroMotionCache = {}; // Cache kết quả kiểm tra video: { heroName: videoPath | null }
-const VIDEO_EXTENSIONS = ['.mp4', '.mov', '.webm'];
 
-// Trích tên tướng từ image path: "images/heroes/Bijan.jpg" → "Bijan"
-function getHeroNameFromImage(imagePath) {
-    if (!imagePath) return null;
-    // Xử lý cả dạng url(...) và path thường
-    const cleaned = imagePath.replace(/^url\(["']?|["']?\)$/g, '').replace(/^\//, '');
-    const filename = cleaned.split('/').pop();
-    return filename ? filename.replace(/\.[^.]+$/, '') : null;
-}
-
-// Kiểm tra video tướng có tồn tại không (cache kết quả, chỉ fetch HEAD 1 lần mỗi tướng)
-async function findHeroMotionVideo(heroName) {
-    if (!heroName) return null;
-    if (heroMotionCache[heroName] !== undefined) return heroMotionCache[heroName];
-
-    for (const ext of VIDEO_EXTENSIONS) {
-        const videoPath = `/images/heroMotion/${heroName}${ext}`;
-        try {
-            const resp = await fetch(videoPath, { method: 'HEAD' });
-            if (resp.ok) {
-                heroMotionCache[heroName] = videoPath;
-                return videoPath;
-            }
-        } catch (e) { /* ignore network errors */ }
-    }
-    heroMotionCache[heroName] = null;
-    return null;
-}
-
-// Tạo hoặc cập nhật video element trong slot
-function setHeroVideo(slot, videoPath) {
-    let video = slot.querySelector('.heroVideo');
-    if (!video) {
-        video = document.createElement('video');
-        video.className = 'heroVideo';
-        video.muted = true;
-        video.loop = true;
-        video.playsInline = true;
-        video.autoplay = true;
-        video.preload = 'auto';
-        // Insert vào slot (trước heroImage để cùng layer)
-        const heroImageDiv = slot.querySelector('.heroImage');
-        if (heroImageDiv) {
-            slot.insertBefore(video, heroImageDiv);
-        } else {
-            slot.appendChild(video);
-        }
-    }
-
-    // Chỉ thay đổi src nếu khác → tránh reset video đang chạy
-    if (video.getAttribute('src') !== videoPath) {
-        video.src = videoPath;
-        video.load();
-        video.play().catch(() => {});
-    }
-
-    // Ẩn static heroImage khi có video
-    const heroImageDiv = slot.querySelector('.heroImage');
-    if (heroImageDiv) heroImageDiv.style.display = 'none';
-
-    return video;
-}
-
-// Xóa video element khỏi slot và hiện lại heroImage
-function removeHeroVideo(slot) {
-    const video = slot.querySelector('.heroVideo');
-    if (video) {
-        video.pause();
-        video.removeAttribute('src');
-        video.load(); // Giải phóng tài nguyên
-        video.remove();
-    }
-    // Hiện lại static heroImage
-    const heroImageDiv = slot.querySelector('.heroImage');
-    if (heroImageDiv) heroImageDiv.style.display = '';
-}
-
-// Async: Kiểm tra và hiển thị video cho 1 slot (gọi sau khi set ảnh tĩnh)
-async function tryShowHeroVideo(slot, imagePath) {
-    const heroName = getHeroNameFromImage(imagePath);
-    if (!heroName) return;
-
-    const videoPath = await findHeroMotionVideo(heroName);
-    if (videoPath) {
-        setHeroVideo(slot, videoPath);
-    } else {
-        // Không có video → đảm bảo xóa video cũ nếu có
-        removeHeroVideo(slot);
-    }
-}
-/* ===================== END HERO MOTION ===================== */
 
 
 socket.onopen = () => {
@@ -154,6 +195,10 @@ socket.onerror = (error) => {
 
 
 function handleData(data) {
+    if (data.motionHeroEnabled !== undefined && !MotionHero.initialized) {
+        MotionHero.init(data.motionHeroEnabled);
+    }
+
     switch (data.type) {
         case 'playSound':
             playSound();
@@ -172,6 +217,7 @@ function handleData(data) {
             break;
         case 'resetBanPick':
             resetBanPickSlots();
+            MotionHero.clearMemory();
             break;
         case 'teamStatus':
             updateTeamStatusFromWebSocket(data);
@@ -230,12 +276,78 @@ function startCountdown() {
 }
 
 
-function updateSlot(data) {
+async function updateSlot(data) {
     const slot = document.getElementById(data.slotId);
     if (!slot) return;
 
     const heroImageDiv = slot.querySelector('.heroImage');
-    if (heroImageDiv) {
+    if (!heroImageDiv) return;
+
+    // Determine if this is a pick slot (video motion only applies to picks)
+    const isPick = data.slotId && data.slotId.startsWith('pick');
+    const heroName = MotionHero.extractHeroName(data);
+
+    // Try to load Motion Hero video for PICK slots on SELECT or LOCK
+    let videoLoaded = false;
+    if (MotionHero.isEnabled && isPick && heroName && (data.type === 'select' || data.type === 'lock')) {
+        const existingVideo = heroImageDiv.querySelector('video');
+        if (existingVideo && heroImageDiv.dataset.activeHero === heroName) {
+            videoLoaded = true;
+        } else {
+            const blobUrl = await MotionHero.loadHeroVideo(heroName);
+            if (blobUrl) {
+                const video = document.createElement('video');
+                video.autoplay = true;
+                video.loop = true;
+                video.muted = true;
+                video.playsInline = true;
+                video.setAttribute('disablePictureInPicture', '');
+                video.setAttribute('controlslist', 'nodownload noplaybackrate');
+                video.style.cssText = 'width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;pointer-events:none;';
+
+                const showVideo = () => {
+                    if (existingVideo && existingVideo !== video) {
+                        existingVideo.pause();
+                        existingVideo.removeAttribute('src');
+                        existingVideo.remove();
+                    }
+                    heroImageDiv.style.backgroundImage = '';
+                };
+
+                video.onplaying = showVideo;
+                video.onloadeddata = showVideo;
+
+                video.src = blobUrl;
+                heroImageDiv.appendChild(video);
+                heroImageDiv.dataset.activeHero = heroName;
+
+                setTimeout(showVideo, 200);
+
+                let shield = heroImageDiv.querySelector('.glass-shield');
+                if (!shield) {
+                    shield = document.createElement('div');
+                    shield.className = 'glass-shield';
+                    shield.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:999;background:transparent;pointer-events:auto;-webkit-user-select:none;user-select:none;';
+                    shield.addEventListener('contextmenu', (e) => e.preventDefault());
+                    heroImageDiv.appendChild(shield);
+                }
+
+                videoLoaded = true;
+            }
+        }
+    }
+
+    // Static image fallback (original logic) — always used for ban slots,
+    // or when MotionHero is disabled/unavailable
+    if (!videoLoaded) {
+        delete heroImageDiv.dataset.activeHero;
+        const existingVideo = heroImageDiv.querySelector('video');
+        if (existingVideo) {
+            existingVideo.pause();
+            existingVideo.removeAttribute('src');
+            existingVideo.remove();
+        }
+
         heroImageDiv.style.position = 'absolute';
         heroImageDiv.style.backgroundImage = `url(/${data.image})`;
         heroImageDiv.style.backgroundSize = 'cover';
@@ -244,52 +356,20 @@ function updateSlot(data) {
         heroImageDiv.style.height = '100%';
     }
 
-    // Hero Motion Video: kiểm tra và hiển thị video nếu có (chỉ cho pick slot)
-    if (data.image && data.image.trim() !== '' && slot.classList.contains('pick')) {
-        tryShowHeroVideo(slot, data.image);
-    }
+    cleanUnusedHeroVideos();
 
+    // Apply slot state classes (same for video and static)
     if (data.type === 'banActive') {
         slot.classList.add('active');
-        const activeIndicator = slot.querySelector('.active-indicator');
-        if (activeIndicator) {
-            activeIndicator.style.display = 'flex';
-            setTimeout(() => activeIndicator.classList.add('show'), 10);
-        }
-        updateTeamStatus(data.slotId);
     } else if (data.type === 'lock') {
         slot.classList.add('locked');
         if (heroImageDiv) {
             heroImageDiv.classList.add('locked');
             heroImageDiv.style.animation = 'zoomInOut 1s forwards';
-            if (slot.classList.contains('pick')) {
-                slot.style.filter = 'none';
-            }
-            if (slot.classList.contains('ban')) {
-                heroImageDiv.style.filter = 'grayscale(100%)';
-            }
-        }
-        // Lock animation cho video nếu có
-        const heroVideo = slot.querySelector('.heroVideo');
-        if (heroVideo && slot.classList.contains('pick')) {
-            heroVideo.style.animation = 'zoomInOut 1s forwards';
         }
         slot.classList.remove('active');
-        const activeIndicator = slot.querySelector('.active-indicator');
-        if (activeIndicator) {
-            activeIndicator.classList.remove('show');
-            setTimeout(() => activeIndicator.style.display = 'none', 300);
-        }
-        // Cập nhật team status sau khi slot bị lock
-        setTimeout(() => checkAndUpdateTeamStatus(), 100);
     } else if (data.type === 'select') {
         slot.classList.add('active');
-        const activeIndicator = slot.querySelector('.active-indicator');
-        if (activeIndicator) {
-            activeIndicator.style.display = 'flex';
-            setTimeout(() => activeIndicator.classList.add('show'), 10);
-        }
-        updateTeamStatus(data.slotId);
     }
 }
 
@@ -396,28 +476,80 @@ function checkAndUpdateTeamStatus() {
 }
 
 
-function updateSwapImage(slotId, newImage) {
+async function updateSwapImage(slotId, newImage) {
     const slot = document.getElementById(slotId);
     if (!slot) {
         console.error('Slot not found:', slotId);
         return;
     }
 
-    // Check if there's a heroImage div inside the slot (OBS views)
     const heroImageDiv = slot.querySelector('.heroImage');
-    if (heroImageDiv) {
-        // For OBS views with heroImage div
-        heroImageDiv.style.backgroundImage = newImage ? `url(/${newImage})` : '';
-    } else {
-        // For manager view (index.html) where slot itself has the background image
+    if (!heroImageDiv) {
         slot.style.backgroundImage = newImage ? `url(${newImage})` : '';
+        return;
     }
 
-    // Hero Motion Video: cập nhật video khi swap (chỉ cho pick slot)
-    if (newImage && slot.classList.contains('pick')) {
-        tryShowHeroVideo(slot, newImage);
-    } else {
-        removeHeroVideo(slot);
+    const isPick = slotId && slotId.startsWith('pick');
+    const heroName = MotionHero.extractHeroName({ image: newImage });
+
+    let videoLoaded = false;
+    if (MotionHero.isEnabled && isPick && heroName) {
+        const existingVideo = heroImageDiv.querySelector('video');
+        if (existingVideo && heroImageDiv.dataset.activeHero === heroName) {
+            videoLoaded = true;
+        } else {
+            const blobUrl = await MotionHero.loadHeroVideo(heroName);
+            if (blobUrl) {
+                const video = document.createElement('video');
+                video.autoplay = true;
+                video.loop = true;
+                video.muted = true;
+                video.playsInline = true;
+                video.setAttribute('disablePictureInPicture', '');
+                video.setAttribute('controlslist', 'nodownload noplaybackrate');
+                video.style.cssText = 'width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;pointer-events:none;';
+
+                const showVideo = () => {
+                    if (existingVideo && existingVideo !== video) {
+                        existingVideo.pause();
+                        existingVideo.removeAttribute('src');
+                        existingVideo.remove();
+                    }
+                    heroImageDiv.style.backgroundImage = '';
+                };
+
+                video.onplaying = showVideo;
+                video.onloadeddata = showVideo;
+
+                video.src = blobUrl;
+                heroImageDiv.appendChild(video);
+                heroImageDiv.dataset.activeHero = heroName;
+
+                setTimeout(showVideo, 200);
+
+                let shield = heroImageDiv.querySelector('.glass-shield');
+                if (!shield) {
+                    shield = document.createElement('div');
+                    shield.className = 'glass-shield';
+                    shield.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:999;background:transparent;pointer-events:auto;-webkit-user-select:none;user-select:none;';
+                    shield.addEventListener('contextmenu', (e) => e.preventDefault());
+                    heroImageDiv.appendChild(shield);
+                }
+
+                videoLoaded = true;
+            }
+        }
+    }
+
+    if (!videoLoaded) {
+        delete heroImageDiv.dataset.activeHero;
+        const existingVideo = heroImageDiv.querySelector('video');
+        if (existingVideo) {
+            existingVideo.pause();
+            existingVideo.removeAttribute('src');
+            existingVideo.remove();
+        }
+        heroImageDiv.style.backgroundImage = newImage ? `url(/${newImage})` : '';
     }
 }
 

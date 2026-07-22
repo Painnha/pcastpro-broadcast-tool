@@ -61,8 +61,12 @@ const userSchema = new mongoose.Schema({
     },
     permissions: {
         type: [String],
-        enum: ['basic', 'fandomwar', 'quanlyobs'],
+        enum: ['basic', 'fandomwar', 'quanlyobs', 'motionhero'],
         default: []
+    },
+    motionHeroEnabled: {
+        type: Boolean,
+        default: true
     }
 }, {
     timestamps: true

@@ -1,3 +1,137 @@
+
+
+/* ===================== MOTION HERO MODULE ===================== */
+const MotionHero = (() => {
+    const _blobCache = new Map();
+    let _sessionKey = null;
+    let _isEnabled = false;
+    let _initialized = false;
+    let _keyFetchPromise = null;
+
+    function hexToBytes(hex) {
+        const bytes = new Uint8Array(hex.length / 2);
+        for (let i = 0; i < hex.length; i += 2) {
+            bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+        }
+        return bytes;
+    }
+
+    async function init(enabled) {
+        if (_initialized) return;
+        _isEnabled = enabled;
+        _initialized = true;
+        if (enabled) await _fetchSessionKey();
+    }
+
+    async function _fetchSessionKey() {
+        if (_keyFetchPromise) return _keyFetchPromise;
+        _keyFetchPromise = (async () => {
+            try {
+                const token = localStorage.getItem('authToken') || '';
+                const res = await fetch('/api/motion-hero/session-key', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    _sessionKey = data.key;
+                } else {
+                    _isEnabled = false;
+                }
+            } catch (e) {
+                _isEnabled = false;
+            } finally {
+                _keyFetchPromise = null;
+            }
+        })();
+        return _keyFetchPromise;
+    }
+
+    async function loadHeroVideo(heroName) {
+        if (!_isEnabled || !heroName) return null;
+        if (!_sessionKey) { await _fetchSessionKey(); if (!_sessionKey) return null; }
+        if (_blobCache.has(heroName)) return _blobCache.get(heroName).blobUrl;
+
+        try {
+            const token = localStorage.getItem('authToken') || '';
+            const res = await fetch(`/api/motion-hero/stream/${encodeURIComponent(heroName)}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) return null;
+
+            const encryptedData = await res.arrayBuffer();
+            if (encryptedData.byteLength < 29) return null;
+
+            const iv = new Uint8Array(encryptedData, 0, 12);
+            const authTag = new Uint8Array(encryptedData, 12, 16);
+            const ciphertext = new Uint8Array(encryptedData, 28);
+            const combined = new Uint8Array(ciphertext.length + authTag.length);
+            combined.set(ciphertext, 0);
+            combined.set(authTag, ciphertext.length);
+
+            const keyBytes = hexToBytes(_sessionKey);
+            const cryptoKey = await crypto.subtle.importKey('raw', keyBytes, { name: 'AES-GCM' }, false, ['decrypt']);
+            const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv, tagLength: 128 }, cryptoKey, combined.buffer);
+
+            const blob = new Blob([decrypted], { type: 'video/mp4' });
+            const blobUrl = URL.createObjectURL(blob);
+            _blobCache.set(heroName, { blobUrl });
+            return blobUrl;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function cleanUnusedBlobs(activeHeroNames) {
+        const activeSet = new Set(activeHeroNames.filter(Boolean));
+        for (const [heroName, entry] of _blobCache.entries()) {
+            if (!activeSet.has(heroName)) {
+                try { URL.revokeObjectURL(entry.blobUrl); } catch (e) { /* ignore */ }
+                _blobCache.delete(heroName);
+            }
+        }
+    }
+
+    function clearMemory() {
+        _blobCache.forEach((entry) => {
+            try { URL.revokeObjectURL(entry.blobUrl); } catch (e) { /* ignore */ }
+        });
+        _blobCache.clear();
+        _sessionKey = null;
+        _initialized = false;
+    }
+
+    function extractHeroName(data) {
+        if (data.heroId) return data.heroId;
+        if (data.image) {
+            const match = data.image.match(/heroes\/([^.\/]+)\./);
+            return match ? match[1] : null;
+        }
+        return null;
+    }
+
+    return {
+        init,
+        loadHeroVideo,
+        clearMemory,
+        cleanUnusedBlobs,
+        extractHeroName,
+        get isEnabled() { return _isEnabled; },
+        get initialized() { return _initialized; }
+    };
+})();
+
+function cleanUnusedHeroVideos() {
+    const activeHeroes = [];
+    document.querySelectorAll('.slot').forEach(slot => {
+        const heroImg = slot.querySelector('.heroImage');
+        if (heroImg && heroImg.dataset.activeHero) {
+            activeHeroes.push(heroImg.dataset.activeHero);
+        }
+    });
+    MotionHero.cleanUnusedBlobs(activeHeroes);
+}
+/* ===================== END MOTION HERO MODULE ===================== */
+
 const socket = new WebSocket('ws://localhost:3000/ws');
 
 socket.onopen = () => {
@@ -41,6 +175,10 @@ socket.onerror = (error) => {
 
 
 function handleData(data) {
+    if (data.motionHeroEnabled !== undefined && !MotionHero.initialized) {
+        MotionHero.init(data.motionHeroEnabled);
+    }
+
     switch (data.type) {
         case 'playSound':
             playSound();
@@ -59,6 +197,7 @@ function handleData(data) {
             break;
         case 'resetBanPick':
             resetBanPickSlots();
+            MotionHero.clearMemory();
             break;
         default:
             updateSlot(data);
@@ -114,74 +253,178 @@ function startCountdown() {
 }
 
 
-function updateSlot(data) {
+async function updateSlot(data) {
     const slot = document.getElementById(data.slotId);
     if (!slot) return;
 
     const heroImageDiv = slot.querySelector('.heroImage');
-    if (heroImageDiv) {
-        slot.classList.remove('has-hero');
-        
-        heroImageDiv.style.position = 'absolute';
-        
-        if (data.image && data.image.trim() !== '') {
-            heroImageDiv.style.backgroundImage = `url(/${data.image})`;
-            heroImageDiv.style.backgroundSize = 'cover';
-            heroImageDiv.style.backgroundPosition = 'center';
-            heroImageDiv.style.width = '100%';
-            heroImageDiv.style.height = '100%';
-            
-            slot.classList.add('has-hero');
+    if (!heroImageDiv) return;
+
+    // Determine if this is a pick slot (video motion only applies to picks)
+    const isPick = data.slotId && data.slotId.startsWith('pick');
+    const heroName = MotionHero.extractHeroName(data);
+
+    // Try to load Motion Hero video for PICK slots on SELECT or LOCK
+    let videoLoaded = false;
+    if (MotionHero.isEnabled && isPick && heroName && (data.type === 'select' || data.type === 'lock')) {
+        const existingVideo = heroImageDiv.querySelector('video');
+        if (existingVideo && heroImageDiv.dataset.activeHero === heroName) {
+            videoLoaded = true;
+        } else {
+            const blobUrl = await MotionHero.loadHeroVideo(heroName);
+            if (blobUrl) {
+                const video = document.createElement('video');
+                video.autoplay = true;
+                video.loop = true;
+                video.muted = true;
+                video.playsInline = true;
+                video.setAttribute('disablePictureInPicture', '');
+                video.setAttribute('controlslist', 'nodownload noplaybackrate');
+                video.style.cssText = 'width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;pointer-events:none;';
+
+                const showVideo = () => {
+                    if (existingVideo && existingVideo !== video) {
+                        existingVideo.pause();
+                        existingVideo.removeAttribute('src');
+                        existingVideo.remove();
+                    }
+                    heroImageDiv.style.backgroundImage = '';
+                };
+
+                video.onplaying = showVideo;
+                video.onloadeddata = showVideo;
+
+                video.src = blobUrl;
+                heroImageDiv.appendChild(video);
+                heroImageDiv.dataset.activeHero = heroName;
+
+                setTimeout(showVideo, 200);
+
+                let shield = heroImageDiv.querySelector('.glass-shield');
+                if (!shield) {
+                    shield = document.createElement('div');
+                    shield.className = 'glass-shield';
+                    shield.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:999;background:transparent;pointer-events:auto;-webkit-user-select:none;user-select:none;';
+                    shield.addEventListener('contextmenu', (e) => e.preventDefault());
+                    heroImageDiv.appendChild(shield);
+                }
+
+                videoLoaded = true;
+            }
         }
     }
 
+    // Static image fallback (original logic) — always used for ban slots,
+    // or when MotionHero is disabled/unavailable
+    if (!videoLoaded) {
+        delete heroImageDiv.dataset.activeHero;
+        const existingVideo = heroImageDiv.querySelector('video');
+        if (existingVideo) {
+            existingVideo.pause();
+            existingVideo.removeAttribute('src');
+            existingVideo.remove();
+        }
+
+        heroImageDiv.style.position = 'absolute';
+        heroImageDiv.style.backgroundImage = `url(/${data.image})`;
+        heroImageDiv.style.backgroundSize = 'cover';
+        heroImageDiv.style.backgroundPosition = 'center';
+        heroImageDiv.style.width = '100%';
+        heroImageDiv.style.height = '100%';
+    }
+
+    cleanUnusedHeroVideos();
+
+    // Apply slot state classes (same for video and static)
     if (data.type === 'banActive') {
-        slot.classList.remove('has-hero');
         slot.classList.add('active');
     } else if (data.type === 'lock') {
         slot.classList.add('locked');
         if (heroImageDiv) {
             heroImageDiv.classList.add('locked');
             heroImageDiv.style.animation = 'zoomInOut 1s forwards';
-            if (slot.classList.contains('pick')) {
-                slot.classList.add('zoom-effect');
-            } else {
-                slot.classList.add('grayscale');
-            }
         }
         slot.classList.remove('active');
     } else if (data.type === 'select') {
         slot.classList.add('active');
-        if (data.image && data.image.trim() !== '') {
-            slot.classList.add('has-hero');
-        } else {
-            slot.classList.remove('has-hero');
-        }
     }
 }
 
 
-function updateSwapImage(slotId, newImage) {
+async function updateSwapImage(slotId, newImage) {
     const slot = document.getElementById(slotId);
     if (!slot) {
         console.error('Slot not found:', slotId);
         return;
     }
 
-    // Check if there's a heroImage div inside the slot (OBS views)
     const heroImageDiv = slot.querySelector('.heroImage');
-    if (heroImageDiv) {
-        // For OBS views with heroImage div
-        heroImageDiv.style.backgroundImage = newImage ? `url(/${newImage})` : '';
-                // Cập nhật các class liên quan
-        slot.classList.add('has-hero');
-        heroImageDiv.style.backgroundSize = 'cover';
-        heroImageDiv.style.backgroundPosition = 'center';
-        heroImageDiv.style.width = '100%';
-        heroImageDiv.style.height = '100%';
-    } else {
-        // For manager view (index.html) where slot itself has the background image
+    if (!heroImageDiv) {
         slot.style.backgroundImage = newImage ? `url(${newImage})` : '';
+        return;
+    }
+
+    const isPick = slotId && slotId.startsWith('pick');
+    const heroName = MotionHero.extractHeroName({ image: newImage });
+
+    let videoLoaded = false;
+    if (MotionHero.isEnabled && isPick && heroName) {
+        const existingVideo = heroImageDiv.querySelector('video');
+        if (existingVideo && heroImageDiv.dataset.activeHero === heroName) {
+            videoLoaded = true;
+        } else {
+            const blobUrl = await MotionHero.loadHeroVideo(heroName);
+            if (blobUrl) {
+                const video = document.createElement('video');
+                video.autoplay = true;
+                video.loop = true;
+                video.muted = true;
+                video.playsInline = true;
+                video.setAttribute('disablePictureInPicture', '');
+                video.setAttribute('controlslist', 'nodownload noplaybackrate');
+                video.style.cssText = 'width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;pointer-events:none;';
+
+                const showVideo = () => {
+                    if (existingVideo && existingVideo !== video) {
+                        existingVideo.pause();
+                        existingVideo.removeAttribute('src');
+                        existingVideo.remove();
+                    }
+                    heroImageDiv.style.backgroundImage = '';
+                };
+
+                video.onplaying = showVideo;
+                video.onloadeddata = showVideo;
+
+                video.src = blobUrl;
+                heroImageDiv.appendChild(video);
+                heroImageDiv.dataset.activeHero = heroName;
+
+                setTimeout(showVideo, 200);
+
+                let shield = heroImageDiv.querySelector('.glass-shield');
+                if (!shield) {
+                    shield = document.createElement('div');
+                    shield.className = 'glass-shield';
+                    shield.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:999;background:transparent;pointer-events:auto;-webkit-user-select:none;user-select:none;';
+                    shield.addEventListener('contextmenu', (e) => e.preventDefault());
+                    heroImageDiv.appendChild(shield);
+                }
+
+                videoLoaded = true;
+            }
+        }
+    }
+
+    if (!videoLoaded) {
+        delete heroImageDiv.dataset.activeHero;
+        const existingVideo = heroImageDiv.querySelector('video');
+        if (existingVideo) {
+            existingVideo.pause();
+            existingVideo.removeAttribute('src');
+            existingVideo.remove();
+        }
+        heroImageDiv.style.backgroundImage = newImage ? `url(/${newImage})` : '';
     }
 }
 

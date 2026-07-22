@@ -7,7 +7,7 @@ const fs = require('fs');
 const { exec } = require('child_process');
 
 const { projectRoot } = require('./config/pathHelper');
-const { checkForUpdates } = require('./services/updateService');
+const { checkForUpdates, CURRENT_VERSION } = require('./services/updateService');
 
 // Load .env from project root first, fall back to backend/ folder
 const envPathRoot = path.join(projectRoot, '.env');
@@ -27,7 +27,7 @@ process.env.PORT = process.env.PORT || '3000';
 
 const connectDB = require('./config/db');
 const { serveThemeAssets } = require('./middleware/themeServer');
-const { initSockets } = require('./sockets/socketManager');
+const { initSockets, broadcast } = require('./sockets/socketManager');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -35,6 +35,7 @@ const themeRoutes = require('./routes/themeRoutes');
 const teamRoutes = require('./routes/teamRoutes');
 const obsRoutes = require('./routes/obsRoutes');
 const fandomRoutes = require('./routes/fandomRoutes');
+const motionHeroRoutes = require('./routes/motionHeroRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -45,6 +46,11 @@ initSockets(server);
 // Middleware
 app.use(bodyParser.json());
 app.use(cors());
+
+// Block direct access to hero motion files (encrypted .dat and source .mp4)
+app.use('/images/heroMotion', (req, res) => {
+    res.status(403).send('Access denied');
+});
 
 // Serve static assets using projectRoot
 app.use(express.static(path.join(projectRoot, 'frontend')));
@@ -59,18 +65,29 @@ app.use(themeRoutes);
 app.use(teamRoutes);
 app.use(obsRoutes);
 app.use(fandomRoutes);
+app.use(motionHeroRoutes);
 
-// Start Server wrapped in an async function to allow update checks first
+// Update Status & Manual Sync Endpoint
+app.get(['/api/update/status', '/update/status'], (req, res) => {
+    res.json({
+        success: true,
+        version: CURRENT_VERSION,
+        timestamp: new Date().toISOString()
+    });
+});
+
+app.post(['/api/update/check', '/update/check'], (req, res) => {
+    checkForUpdates(broadcast);
+    res.json({ success: true, message: 'Đã kích hoạt quét & đồng bộ dữ liệu ngầm.' });
+});
+
+// Start Server asynchronously (Non-blocking)
 async function startServer() {
-    // Check and apply updates if packaged
-    await checkForUpdates();
-
     // Initialize database connection
     connectDB();
 
     const HTTP_PORT = process.env.PORT || 3000;
     server.listen(HTTP_PORT, () => {
-        const { CURRENT_VERSION } = require('./services/updateService');
         console.log('');
         console.log('  ====================================');
         console.log('   PCastPro Broadcast Tool');
@@ -78,6 +95,11 @@ async function startServer() {
         console.log(`   URL     : http://localhost:${HTTP_PORT}`);
         console.log('  ====================================');
         console.log('');
+
+        // Launch background Unified Delta Updater (Core check -> Asset Self-Healing)
+        checkForUpdates(broadcast).catch(err => {
+            console.warn('Unified Updater background run finished with warning:', err.message);
+        });
 
         // Tự động mở trình duyệt nếu chạy từ file EXE
         if (process.pkg) {

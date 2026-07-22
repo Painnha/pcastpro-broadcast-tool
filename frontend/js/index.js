@@ -15,14 +15,69 @@ const initializeWebSocket = () => {
         handleForceLogout(data.message, data.reason);
     });
 
+    // Handle Delta Updater & Self-Healing progress notifications
+    socketService.on('update-progress', (data) => {
+        handleUpdateProgress(data);
+    });
+
     // Forward TikTok and Facebook Live comments or status events to fandomWar
     socketService.on('message', (message) => {
+        if (message.type === 'update-progress') {
+            handleUpdateProgress(message);
+        }
         if (message.type && (message.type.startsWith('tiktok-') || message.type.startsWith('facebook-'))) {
             if (window.fandomWar) {
                 window.fandomWar.handleWebSocketMessage(message);
             }
         }
     });
+};
+
+/**
+ * Render real-time progress toast for Delta Updater & Asset Self-Healing
+ */
+const handleUpdateProgress = (data) => {
+    let toast = document.getElementById('update-progress-toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'update-progress-toast';
+        toast.style.cssText = `
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 99999;
+            width: 360px;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(59, 130, 246, 0.4);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+            border-radius: 12px;
+            padding: 16px;
+            color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+        `;
+        document.body.appendChild(toast);
+    }
+
+    if (data.status === 'error' || data.status === 'core-update-available') {
+        toast.style.display = 'block';
+        toast.style.borderColor = data.status === 'error' ? 'rgba(239, 68, 68, 0.5)' : 'rgba(245, 158, 11, 0.5)';
+        const iconColor = data.status === 'error' ? '#f87171' : '#fbbf24';
+        const titleText = data.status === 'error' ? 'Thông báo cập nhật' : 'Có bản nâng cấp Core mới';
+        toast.innerHTML = `
+            <div style="display:flex; align-items:center; gap:10px;">
+                <i class="fas fa-exclamation-triangle" style="color:${iconColor}; font-size:20px;"></i>
+                <div>
+                    <strong style="font-size:14px; color:${iconColor};">${titleText}</strong>
+                    <div style="font-size:12px; color:#cbd5e1; margin-top:2px;">${data.message}</div>
+                </div>
+            </div>
+        `;
+        setTimeout(() => {
+            if (toast) toast.style.display = 'none';
+        }, 6000);
+    }
 };
 
 /**
@@ -252,6 +307,105 @@ const triggerLogout = () => {
     }
 };
 
+/**
+ * Global toast notification function.
+ * @param {string} message - Message text
+ * @param {'success'|'error'|'info'|'warning'} [type='info'] - Notification type
+ */
+window.showToast = (message, type = 'info') => {
+    let toastContainer = document.getElementById('global-toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'global-toast-container';
+        toastContainer.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 99999; display: flex; flex-direction: column; gap: 10px; pointer-events: none;';
+        document.body.appendChild(toastContainer);
+
+        if (!document.getElementById('global-toast-keyframes')) {
+            const style = document.createElement('style');
+            style.id = 'global-toast-keyframes';
+            style.textContent = `
+                @keyframes toastSlideIn {
+                    from { transform: translateX(120%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+                @keyframes toastSlideOut {
+                    from { transform: translateX(0); opacity: 1; }
+                    to { transform: translateX(120%); opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }
+
+    const toast = document.createElement('div');
+    let bgColor = '#3b82f6';
+    let iconClass = 'fa-info-circle';
+
+    if (type === 'success') {
+        bgColor = 'linear-gradient(135deg, #10b981, #059669)';
+        iconClass = 'fa-check-circle';
+    } else if (type === 'error' || type === 'danger') {
+        bgColor = 'linear-gradient(135deg, #ef4444, #dc2626)';
+        iconClass = 'fa-exclamation-circle';
+    } else if (type === 'warning') {
+        bgColor = 'linear-gradient(135deg, #f59e0b, #d97706)';
+        iconClass = 'fa-exclamation-triangle';
+    }
+
+    toast.style.cssText = `background: ${bgColor}; color: #fff; padding: 12px 18px; border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600; box-shadow: 0 8px 24px rgba(0,0,0,0.35); display: flex; align-items: center; gap: 10px; pointer-events: auto; animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.15);`;
+    toast.innerHTML = `<i class="fas ${iconClass}" style="font-size: 16px;"></i> <span>${message}</span>`;
+
+    toastContainer.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.animation = 'toastSlideOut 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards';
+        setTimeout(() => toast.remove(), 300);
+    }, 3500);
+};
+
+/**
+ * Updates Motion Hero toggle button UI.
+ * @param {boolean} enabled - Whether motion hero is ON or OFF
+ */
+const updateMotionHeroUI = (enabled) => {
+    const btn = document.getElementById('motionHeroToggleBtn');
+    const textSpan = document.getElementById('motionHeroBtnText');
+    if (!btn || !textSpan) return;
+
+    if (enabled) {
+        btn.className = 'btn btn-purple';
+        textSpan.textContent = 'Ảnh tướng động: ON';
+        btn.setAttribute('title', 'Ảnh tướng động đang BẬT. Click để tắt.');
+    } else {
+        btn.className = 'btn btn-gray';
+        textSpan.textContent = 'Ảnh tướng động: OFF';
+        btn.setAttribute('title', 'Ảnh tướng động đang TẮT. Click để bật.');
+    }
+};
+
+/**
+ * Fetches current Motion Hero status for active user.
+ */
+const checkMotionHeroStatus = async () => {
+    try {
+        const data = await API.get('/api/motion-hero/check');
+        const btn = document.getElementById('motionHeroToggleBtn');
+        if (data.success) {
+            if (data.hasMotionHero) {
+                if (btn) btn.style.display = 'inline-block';
+                updateMotionHeroUI(data.motionHeroEnabled);
+            } else {
+                if (btn) btn.style.display = 'none';
+                updateMotionHeroUI(false);
+            }
+        }
+    } catch (e) {
+        const btn = document.getElementById('motionHeroToggleBtn');
+        if (btn) btn.style.display = 'none';
+        updateMotionHeroUI(false);
+    }
+};
+
 // Application Main Entrypoint IIFE
 (async () => {
     const isValidSession = await checkUserSession();
@@ -277,6 +431,25 @@ const triggerLogout = () => {
     if (guideButton) {
         guideButton.addEventListener('click', () => {
             window.open('guide.html', '_blank');
+        });
+    }
+
+    const motionHeroBtn = document.getElementById('motionHeroToggleBtn');
+    if (motionHeroBtn) {
+        // Fetch current setting state
+        checkMotionHeroStatus();
+
+        motionHeroBtn.addEventListener('click', async () => {
+            try {
+                const data = await API.post('/api/motion-hero/toggle', {});
+                if (data.success) {
+                    updateMotionHeroUI(data.motionHeroEnabled);
+                    window.showToast(data.message, 'success');
+                }
+            } catch (error) {
+                console.error('Error toggling motion hero:', error);
+                window.showToast(error.message || 'Bạn chưa có quyền sử dụng tính năng này!', 'error');
+            }
         });
     }
 })();

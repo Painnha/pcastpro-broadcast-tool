@@ -9,41 +9,61 @@
   <link rel="stylesheet" href="css/obs-manager.css" />
   <script src="https://unpkg.com/obs-websocket-js@5.0.0/dist/obs-ws.min.js"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="assets/Pcasthub.png" />
 </head>
 
 <body>
-  <div class="container">
-    <!-- Header (user-section) -->
-    <div class="user-section">
-      <span id="userInfo">Xin chào, triphong2002</span>
-      <div class="theme-section">
-        <label for="themeSelect">Theme:</label>
-        <select id="themeSelect" class="theme-dropdown">
-          <option value="apl2025">Apl2025</option>
-        </select>
+  <div class="app-layout">
+    <!-- Left Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <img src="assets/Pcasthub.png" class="brand-logo" alt="Pcasthub Logo" />
+          <span class="brand-text">PCastPro</span>
+        </div>
       </div>
-      <button id="guideButton" class="btn btn-info">📖 Hướng dẫn</button>
-      <button id="logoutButton">Đăng xuất</button>
-    </div>
+      
+      <!-- Main Tabs Navigation -->
+      <div class="main-tabs">
+        <button class="main-tab active" data-tab="banpick">
+          <span class="tab-label">Ban-Pick</span>
+        </button>
+        <button class="main-tab" data-tab="obs-manager">
+          <span class="tab-label">Quản lý OBS</span>
+        </button>
+      </div>
 
-    <!-- No Permission Message -->
-    <div id="no-permission-message" class="no-permission-card" style="display: none;">
-      <div class="no-permission-icon">
-        <i class="fas fa-shield-alt"></i>
+      <!-- User Section (integrated into sidebar) -->
+      <div class="user-section">
+        <div class="user-info" id="userInfoWrapper" title="Thông tin tài khoản">
+          <i class="fas fa-user-circle"></i>
+          <span id="userInfo" class="user-text">Xin chào, triphong2002</span>
+        </div>
+        <div class="theme-section" title="Chọn HUD">
+          <label for="themeSelect" class="theme-label"><i class="fas fa-palette"></i> <span class="theme-text">HUD</span></label>
+          <select id="themeSelect" class="theme-dropdown">
+            <option value="apl2025">Apl2025</option>
+          </select>
+        </div>
+        <button id="guideButton" class="btn btn-info">📖 Hướng dẫn</button>
+        <button id="logoutButton" title="Đăng xuất"><i class="fas fa-sign-out-alt"></i> <span class="logout-text">Đăng xuất</span></button>
       </div>
-      <h2>Yêu Cầu Cấp Quyền</h2>
-      <p>Tài khoản của bạn hiện chưa được kích hoạt bất kỳ quyền sử dụng dịch vụ nào trên hệ thống.</p>
-      <div class="permission-contact-info">
-        <span>Vui lòng liên hệ Quản trị viên để được kích hoạt và gán quyền sử dụng dịch vụ.</span>
-      </div>
-    </div>
+    </aside>
 
-    <!-- Main Tabs Navigation -->
-    <div class="main-tabs">
-      <button class="main-tab active" data-tab="banpick">Ban-Pick</button>
-      <button class="main-tab" data-tab="obs-manager">Quản lý OBS</button>
-    </div>
+    <!-- Main Workspace -->
+    <main class="workspace">
+      <!-- No Permission Message -->
+      <div id="no-permission-message" class="no-permission-card" style="display: none;">
+        <div class="no-permission-icon">
+          <i class="fas fa-shield-alt"></i>
+        </div>
+        <h2>Yêu Cầu Cấp Quyền</h2>
+        <p>Tài khoản của bạn hiện chưa được kích hoạt bất kỳ quyền sử dụng dịch vụ nào trên hệ thống.</p>
+        <div class="permission-contact-info">
+          <span>Vui lòng liên hệ Quản trị viên để được kích hoạt và gán quyền sử dụng dịch vụ.</span>
+        </div>
+      </div>
 
     <!-- Ban-Pick Tab Content -->
     <div id="banpick-tab" class="tab-content active banpick-tab-content">
@@ -311,6 +331,7 @@
               <button id="startButton" class="btn btn-blue">Bắt đầu</button>
               <button id="lockButton" class="btn btn-red">Khóa Tướng</button>
               <button id="autoFillButton" class="btn btn-orange">Auto Fill Test</button>
+              <button id="motionHeroToggleBtn" class="btn btn-gray" title="Bật/tắt Video Motion Hero"><i class="fas fa-film"></i> <span id="motionHeroBtnText">Ảnh tướng động: OFF</span></button>
               <div id="error-message"></div>
             </div>
             <input type="text" id="searchInput" placeholder="Tìm kiếm tướng..." />
@@ -849,6 +870,7 @@
       </div>
     </div>
 
+    </main>
     <audio id="lockSound" src="../shared/audio/PickEffect.mp3"></audio>
   </div>
 
